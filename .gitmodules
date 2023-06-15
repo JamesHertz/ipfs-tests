@@ -1,0 +1,6 @@
+[submodule "repos/ipfs-client"]
+	path = repos/ipfs-client
+	url = git@github.com:JamesHertz/ipfs-client.git
+[submodule "repos/webmaster"]
+	path = repos/webmaster
+	url = git@github.com:JamesHertz/webmaster.git
