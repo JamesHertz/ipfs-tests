@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
+set -e
 
 NETWORK=ipfs-net
 IMAGE=ipfs-node
 
 re='^[0-9]+$'
-if [ $# -lt 1 ] ; then 
+if [[ $# -lt 1  || ! "$1" =~ $re ]]; then 
     echo "usage: $0 <number-of-nodes>"
-    exit 1
-fi
-
-if ! [[ "$1" =~ $re ]] ; then 
-    echo "Error: invalid <number-of-nodes> : $1 - try again"
+    echo -n "ERROR: " 
+    [ $# -lt 1 ] && echo "invalid number or args" || echo "invalid number: $1"
     exit 1
 fi
 
