@@ -4,6 +4,7 @@ set -e
 
 [[ -z "$MODE" ]] ; echo "MODE variable not set...." ; exit 1
 
+# TODO: complete
 export FILES_DIR=~/files
 export LOG_DIR=~/log
 

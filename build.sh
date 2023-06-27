@@ -1,6 +1,10 @@
 #! /usr/bin/env bash
 set -e
 
+# ------------------
+#   Binaries
+# ------------------
+
 OUTBIN=$PWD/bin
 
 KUBO_REPO=./repos/kubo-ipfs
@@ -20,6 +24,20 @@ KBUCKET_VERSION=v0.5.1-research-v2
 LIBP2P=go-libp2p
 KBUCKET=go-libp2p-kbucket
 DHT=go-libp2p-kad-dht
+
+# ------------------
+#   Docker Images 
+# ------------------
+
+# webserver image name 
+WSERVER_IMAGE=webmaster
+
+# ipfs client binary (not a ipfs node)
+CLIENT_BIN="ipfs-client"
+
+# webserver and kubo docker file
+WSERVER_DFILE=./images/master/Dockerfile
+KUBO_DFILE=./images/common/Dockerfile
 
 function popd(){
     command popd $@ >> /dev/null 
@@ -63,7 +81,7 @@ function main() {
     log "pulling last submodules changes..."
     git pull --recurse-submodules 
 
-    log "building auxiliar binaries"
+    log "building auxiliar binaries..."
     # generate ipfs-client and webmaster binaries
     for dir in ./repos/* ; do
         # skip kubo repo :)
@@ -103,6 +121,24 @@ function main() {
 
     popd 
 
+
+    log "building images..."
+
+    echo "> building $WSERVER_IMAGE"
+    docker build -t "$WSERVER_IMAGE" --file "$WSERVER_DFILE" .
+    echo
+
+    for file in ./bin/ipfs-* ; do
+        local binary_name=$(basename "$file")
+
+        # if the binary is one of the versions (let's generate a docker image)
+        if ! [ "$CLIENT_BIN"  = "$binary_name" ] ; then 
+            echo -e "> building $binary_name" 
+            docker build -t "$binary_name" \
+                --build-arg "binary=$binary_name" --file "$KUBO_DFILE" . 
+            echo
+        fi
+    done
 
     echo "----------------------------------" 
     echo "               DONE               "

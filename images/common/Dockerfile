@@ -1,6 +1,7 @@
 FROM ubuntu
+ARG binary
 
-ENV HOME=/ipfs-default/home
+ENV HOME=/$binary/home
 ENV PATH=$PATH:$HOME
 
 # the number of files to generate
@@ -9,5 +10,8 @@ ENV FILE_NR=5
 ENV FILE_SIZE=2
 
 WORKDIR $HOME
-COPY bin/ipfs* start_experience.sh $HOME
+
+COPY bin/$binary $HOME/ipfs
+COPY bin/ipfs-client images/common/*.sh $HOME
+
 ENTRYPOINT bash start_experience.sh
