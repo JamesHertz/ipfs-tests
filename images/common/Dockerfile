@@ -9,5 +9,5 @@ ENV FILE_NR=5
 ENV FILE_SIZE=2
 
 WORKDIR $HOME
-COPY ipfs* start_experience.sh $HOME
+COPY bin/ipfs* start_experience.sh $HOME
 ENTRYPOINT bash start_experience.sh

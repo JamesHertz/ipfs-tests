@@ -4,3 +4,6 @@
 [submodule "repos/webmaster"]
 	path = repos/webmaster
 	url = git@github.com:JamesHertz/webmaster.git
+[submodule "repos/kubo-ipfs"]
+	path = repos/kubo-ipfs
+	url = git@github.com:JamesHertz/kubo.git

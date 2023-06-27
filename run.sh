@@ -12,6 +12,9 @@ if [[ $# -lt 1  || ! "$1" =~ $re ]]; then
     exit 1
 fi
 
+# --env VARIABLE value
+# try to use env variables and see what's gonna comeout
+
 echo "running $1 nodes :)"
 n=$1
 for ((i=0;i<n;i++)) ; do 
