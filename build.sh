@@ -33,12 +33,13 @@ function pushd(){
 function build_kubo_bin(){
     local binary_name="ipfs-$1"
 
-    echo "building $binary_name..."
+    echo -e "> building $binary_name..."
 
     go mod tidy
-    make build 
+    GOOS='linux' make build 
     cp "$KUBO_OUTPUT_BIN" "$OUTBIN/$binary_name"
-    echo "------------------------------------------------"
+
+    echo
 }
 
 function log(){
@@ -59,10 +60,10 @@ function main() {
     log "reseting submodules..."
     git submodule foreach git reset --hard 
 
-    log "pulling last changes submodules..."
+    log "pulling last submodules changes..."
     git pull --recurse-submodules 
 
-    log "buildint auxiliar binaries"
+    log "building auxiliar binaries"
     # generate ipfs-client and webmaster binaries
     for dir in ./repos/* ; do
         # skip kubo repo :)
@@ -103,11 +104,9 @@ function main() {
     popd 
 
 
-    echo 
     echo "----------------------------------" 
     echo "               DONE               "
     echo "----------------------------------" 
-    echo 
 }
 
 main "$@"
