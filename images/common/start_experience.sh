@@ -2,7 +2,7 @@
 
 set -e
 
-[[ -z "$MODE" ]] ; echo "MODE variable not set...." ; exit 1
+[[ -z "$MODE" ]]  && echo "MODE variable not set...." && exit 1
 
 # TODO: complete
 export FILES_DIR=~/files
@@ -21,7 +21,7 @@ ipfs init ; ipfs bootstrap rm --all
 ipfs config Discovery.MDNS.Enabled --bool false 
 
 # start daemon
-ipfs daemon &
+ipfs daemon >> /dev/null 2>&1 &
 
 # wait a bit
-sleep 10 && ./ipfs-client
+sleep 10 && ./ipfs-client "--mode=$MODE"

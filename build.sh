@@ -67,8 +67,7 @@ function log(){
     echo 
 }
 
-function main() {
-
+function build_binaries(){
     # if bin doesn't exists generate it :)
     ! [ -d "$OUTBIN" ] &&  mkdir "$OUTBIN"
     # delete everyting inside outbin
@@ -120,26 +119,63 @@ function main() {
         done
 
     popd 
+}
 
+function build_images(){
 
     log "building images..."
 
-    echo "> building $WSERVER_IMAGE"
-    docker build -t "$WSERVER_IMAGE" --file "$WSERVER_DFILE" .
-    echo
+    # echo "> building $WSERVER_IMAGE"
+    # docker build -t "$WSERVER_IMAGE" --file "$WSERVER_DFILE" .
+    # echo
 
     for file in ./bin/ipfs-* ; do
         local binary_name=$(basename "$file")
 
         # if the binary is one of the versions (let's generate a docker image)
         if ! [ "$CLIENT_BIN"  = "$binary_name" ] ; then 
+
+            # TODO: change the way you get the mode :)
+            IFS='-' read -ra values <<< "$binary_name"
+            local mode=${values[1]}
+
             echo -e "> building $binary_name" 
             docker build -t "$binary_name" \
-                --build-arg "binary=$binary_name" --file "$KUBO_DFILE" . 
+                --build-arg "binary=$binary_name" \
+                --build-arg "mode=$mode" --file "$KUBO_DFILE" . 
             echo
         fi
     done
 
+}
+
+function help(){
+    echo "usage: ./build.sh [ --images | --bin | --all ] "
+}
+
+function main() {
+
+    case $1 in
+        --images) 
+            build_images
+        ;;
+        --bin)
+            build_binaries
+        ;;
+        --all|'')
+            build_binaries
+            build_images
+        ;;
+        --help)
+            help ; exit 0
+        ;;
+
+        *)
+            echo "Error: Unknown flag: $1"
+            help ; exit 1
+        ;;
+    esac
+    
     echo "----------------------------------" 
     echo "               DONE               "
     echo "----------------------------------" 
