@@ -20,6 +20,8 @@ ipfs init ; ipfs bootstrap rm --all
 # to avoid confusion
 ipfs config Discovery.MDNS.Enabled --bool false 
 
+# tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
+
 # start daemon
 ipfs daemon >> /dev/null 2>&1 &
 

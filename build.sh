@@ -54,7 +54,7 @@ function build_kubo_bin(){
     echo -e "> building $binary_name..."
 
     go mod tidy
-    GOOS='linux' make build 
+    make clean > /dev/null && GOOS='linux' make build 
     cp "$KUBO_OUTPUT_BIN" "$OUTBIN/$binary_name"
 
     echo
@@ -87,8 +87,8 @@ function build_binaries(){
         [ "$dir" = "$KUBO_REPO" ] && continue
         pushd "$dir"
             if [ -f Makefile ] ; then 
-                echo "building $dir"  
-                GOOS='linux' make --silent && cp bin/* "$OUTBIN"
+                echo "> building $dir"  
+                make clean > /dev/null && GOOS='linux' make && cp bin/* "$OUTBIN"
             fi
         popd 
     done
