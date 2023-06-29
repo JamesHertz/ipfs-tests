@@ -77,8 +77,11 @@ function build_binaries(){
     log "reseting submodules..."
     git submodule foreach git reset --hard 
 
-    log "pulling last submodules changes..."
-    git pull --recurse-submodules 
+    log "updating submodules..."
+    git submodule update --remote
+
+    #log "pulling last submodules changes..."
+    # git pull --recurse-submodules 
 
     log "building auxiliar binaries..."
     # generate ipfs-client and webmaster binaries
