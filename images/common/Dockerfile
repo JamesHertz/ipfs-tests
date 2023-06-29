@@ -10,6 +10,7 @@ ENV MODE=$mode
 ENV FILE_NR=5
 # size of the file in megabytes
 ENV FILE_SIZE=2
+ENV EXP_TIMES=1
 ENV SHARED_DIR=/logs
 
 WORKDIR $HOME

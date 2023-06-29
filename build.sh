@@ -11,7 +11,7 @@ KUBO_REPO=./repos/kubo-ipfs
 DEFAULT_KUBO_SUFFIX="default"
 
 # [ <name>:libp2p@version , ... ]
-NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1" "normal:v0.21.1-normal ")
+NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.1" "normal:v0.21.1-normal ")
 
 # output binary
 KUBO_OUTPUT_BIN=cmd/ipfs/ipfs

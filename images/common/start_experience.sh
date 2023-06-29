@@ -26,22 +26,36 @@ ipfs config Discovery.MDNS.Enabled --bool false
 
 # tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
 
-# start daemon
-ipfs daemon >> /dev/null 2>&1 &
+for ((i=0;i<EXP_TIMES;i++)) ;  do
 
-# wait a bit
-sleep 10 && ./ipfs-client "--mode=$MODE" || exit 1
+    echo -e "\n-- RUNNNING TRY: $i --\n"
 
-# TODO: kill ipfs daemon
-NODE_ID=$(ipfs id --format='<id>')
-echo "nodeId: $NODE_ID"
+    ARGS=--mode=$MODE
 
-echo "Killing daemon..."
-# kill ipfs daemon the proccess
-kill $(ps | awk '{print $1, $4}' | grep ipfs | awk '{print $1}')
+    if [ $i -eq 0 ] ; then  # first time
+         ARGS="$ARGS --init"
+    else # in all the others wait for 2 minutes :)
+        sleep 120
+    fi
 
-for file in ${LOG_DIR}/* ; do
-   mv "$file" "$SHARED_DIR/$NODE_ID-$(basename "$file")"
+    # start daemon
+    ipfs daemon >> /dev/null 2>&1 &
+
+    # wait a bit
+    sleep 30 && ./ipfs-client $ARGS || exit 1
+
+    # TODO: kill ipfs daemon
+    NODE_ID=$(ipfs id --format='<id>')
+    echo "nodeId: $NODE_ID"
+
+    echo "Killing daemon..."
+    # kill ipfs daemon the proccess
+    kill $(ps | awk '{print $1, $4}' | grep ipfs | awk '{print $1}')
+
+    for file in ${LOG_DIR}/* ; do
+        mv "$file" "$SHARED_DIR/$i-$NODE_ID-$(basename "$file")"
+    done
+
 done
 
 echo "{\"id\": \"$NODE_ID\", \"mode\": \"$MODE\"}" >> "$SHARED_DIR/$NODE_ID.info"
