@@ -7,4 +7,4 @@
 [submodule "repos/kubo-ipfs"]
 	path = repos/kubo-ipfs
 	url = https://github.com/JamesHertz/kubo.git
-	branch = main
+	branch = experiments
