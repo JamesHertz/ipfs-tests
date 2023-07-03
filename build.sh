@@ -11,7 +11,7 @@ KUBO_REPO=./repos/kubo-ipfs
 DEFAULT_KUBO_SUFFIX="default"
 
 # [ <name>:libp2p@version , ... ]
-NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.1" "normal:v0.21.1-normal ")
+NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.1" "normal:v0.21.1-normal")
 
 # output binary
 KUBO_OUTPUT_BIN=cmd/ipfs/ipfs
@@ -39,6 +39,7 @@ CLIENT_BIN="ipfs-client"
 WSERVER_DFILE=./images/master/Dockerfile
 KUBO_DFILE=./images/common/Dockerfile
 
+USAGE="usage: $0 [ --images | --bin | --all | --clean | --help ]"
 function popd(){
     command popd $@ >> /dev/null 
 }
@@ -74,11 +75,11 @@ function build_binaries(){
     rm -rf $OUTBIN/* 
 
     # get the most update version of everything
-    log "reseting submodules..."
-    git submodule foreach git reset --hard 
+    # log "reseting submodules..."
+    # git submodule foreach git reset --hard 
 
-    log "updating submodules..."
-    git submodule update --remote
+    # log "updating submodules..."
+    # git submodule update --remote
 
     #log "pulling last submodules changes..."
     # git pull --recurse-submodules 
@@ -128,9 +129,8 @@ function build_images(){
 
     log "building images..."
 
-    # echo "> building $WSERVER_IMAGE"
-    # docker build -t "$WSERVER_IMAGE" --file "$WSERVER_DFILE" .
-    # echo
+    echo "> building $WSERVER_IMAGE"
+    docker build -t "$WSERVER_IMAGE" --file "$WSERVER_DFILE" .
 
     for file in ./bin/ipfs-* ; do
         local binary_name=$(basename "$file")
@@ -153,7 +153,9 @@ function build_images(){
 }
 
 function help(){
-    echo "usage: ./build.sh [ --images | --bin | --all ] "
+    # TODO: have a line for each one of the flags
+    echo "$USAGE"
+    exit 0
 }
 
 function main() {
@@ -169,13 +171,19 @@ function main() {
             build_binaries
             build_images
         ;;
+        --clean)
+            log "cleaning unamed images"
+            images=$(docker images --filter "dangling=true" -q --no-trunc)
+            [ -n "$images" ] && docker rmi $images
+            exit 0
+        ;;
         --help)
-            help ; exit 0
+            help 
         ;;
 
         *)
-            echo "Error: Unknown flag: $1"
-            help ; exit 1
+            echo -e "$USAGE\nError: Unknown flag: $1"
+            exit 1
         ;;
     esac
     
