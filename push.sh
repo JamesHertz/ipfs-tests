@@ -10,4 +10,4 @@ case $1 in
     ;;
 esac
 
-scp -r build.sh bin/ images/ dicluster:~/ipfs-tests
+scp -r build.sh run.sh bin/ images/ dicluster:~/ipfs-tests
