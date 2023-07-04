@@ -171,6 +171,18 @@ function main() {
             build_binaries
             build_images
         ;;
+        --cluster)
+           # builds images on a cluster :)
+           curr_host=$(hostname)
+           for host in `oarprint host`; do
+            if [ "$host" = "$curr_host" ] ; then
+                build_images
+            else
+                oarsh "$host" 'cd $HOME/ipfs-tests && ./build.sh --images'
+            fi
+           done
+
+        ;;
         --clean)
             log "cleaning unamed images"
             images=$(docker images --filter "dangling=true" -q --no-trunc)

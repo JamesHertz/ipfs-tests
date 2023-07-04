@@ -3,8 +3,9 @@
 set -e 
 
 NETWORK=sipfs-net
-VNAME=ipfs-logs
-VOLUME="type=volume,source=$VNAME,target=/logs"
+# VNAME=ipfs-logs
+OUT_LOGS=~/.ipfs-logs
+VOLUME="type=bind,source=$OUT_LOGS,target=/logs"
 #REPLICAS=2
 USAGE="usage: $0 [ --run | --logs | --help | --clean ]"
 LOGS_DIR=logs
@@ -13,16 +14,16 @@ function log(){
     echo -e "\n$1\n-----------------------"
 }
 
-function stop_all(){
-   docker service ls --format "{{.ID}}" | xargs docker service rm
+function stop-all(){
+   docker service ls --format "{{.ID}}" | xargs -r docker service rm
 }
 
 function abort(){
    echo "ERROR: aborting all services"
-   stop_all
+   stop-all
 }
 
-function create_network {
+function create-network {
   # Check if network already exists
   local net=$(docker network ls --filter name=$NETWORK -q)
   if [ -z "$net" ] ; then
@@ -32,14 +33,26 @@ function create_network {
   fi
 }
 
-function run_services(){
+function get-hosts(){
+    oarprint host
+}
+ 
+function run-services(){
+
+    # clear logs dir
+
     trap 'abort' ERR
     trap 'abort' SIGINT
 
-    create_network
+    create-network
 
     log "Setting volumes..."
-    docker volume rm "$VNAME" && docker volume create "$VNAME"
+    [ -d "$OUT_LOGS" ] && rm -rf "$OUT_LOGS"
+    mkdir "$OUT_LOGS"
+
+    # TODO: 
+    #   - setup values for Kbucket size and number of stream
+    #   - have the two experiments running :)
 
     log "Launching master..."
     docker service create --name master --restart-condition=none \
@@ -58,10 +71,10 @@ function run_services(){
     echo -e "\nDone!!!\n"
 }
 
-function get_logs () {
+function get-logs () {
 
     log "Stopping services...."
-    stop_all
+    stop-all
 
     log "Getting logs..."
     # decide the folder mane where the logs will be putted
@@ -72,32 +85,32 @@ function get_logs () {
     local dst_log_dir="$LOGS_DIR/ipfs-logs"
     [ $count -gt 0 ] && dst_log_dir="$dst_log_dir-$count"
 
-    # copy logs from driver
-    docker run --rm --name log-collector -d -v "$VNAME:/logs" ubuntu sleep 100000
-    docker cp  log-collector:/logs "$dst_log_dir"
-
-    # stop launched container :)
-    docker ps -aq | xargs docker rm -f >> /dev/null
+    cp "$OUT_LOGS" "$dst_log_dir"
 
     echo -e "\nLogs saved in: $dst_log_dir\n"
 }
 
-case $1 in 
-    --run|'')
-        run_services
-    ;;
-    --logs)
-        get_logs
-    ;;
-    --clean)
-        log "Stopping all the services"
-        stop_all
-    ;;
-    --help)
-       echo "$USAGE" 
-     ;;
-    *)
-        echo -e "$USAGE\nError: unknown option: $1"
-        exit 1
-    ;;
-esac
+function main(){
+    # reserve nodes: -t docker-swarm
+    case $1 in 
+        --run|'')
+            run-services
+        ;;
+        --logs)
+            get-logs
+        ;;
+        --clean)
+            log "Stopping all the services"
+            stop-all
+        ;;
+        --help)
+        echo "$USAGE" 
+        ;;
+        *)
+            echo -e "$USAGE\nError: unknown option: $1"
+            exit 1
+        ;;
+    esac
+}
+
+main $*

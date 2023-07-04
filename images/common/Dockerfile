@@ -25,5 +25,5 @@ COPY bin/$binary $HOME/ipfs
 COPY bin/ipfs-client images/common/*.sh $HOME/
 
 RUN apt-get update \
-    && apt-get install iputils-ping iproute2 -y 
+    && apt-get install iproute2 -y 
 ENTRYPOINT bash start_experience.sh
