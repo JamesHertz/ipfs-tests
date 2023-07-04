@@ -22,8 +22,8 @@ ENV SHARED_DIR=/logs
 WORKDIR $HOME
 
 COPY bin/$binary $HOME/ipfs
-COPY bin/ipfs-client images/common/*.sh $HOME
+COPY bin/ipfs-client images/common/*.sh $HOME/
 
-# RUN apt-get update \
-#     && apt-get install iputils-ping iproute2 -y 
+RUN apt-get update \
+    && apt-get install iputils-ping iproute2 -y 
 ENTRYPOINT bash start_experience.sh

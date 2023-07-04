@@ -79,8 +79,8 @@ function main(){
             cp ~/.ipfs/config "$BASE_REPO" # just so I keep the bootstrap peers
         fi
 
-        # log "Removing files..."
-        # ipfs pin ls | grep recursive | awk '{print $1}' | xargs ipfs pin rm
+        log "Removing files..."
+        ipfs pin ls | grep recursive | awk '{print $1}' | xargs ipfs pin rm
 
         for file in ${LOG_DIR}/* ; do
             mv "$file" "$SHARED_DIR/$i-$NODE_ID-$(basename "$file")"

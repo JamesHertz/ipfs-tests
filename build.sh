@@ -75,11 +75,11 @@ function build_binaries(){
     rm -rf $OUTBIN/* 
 
     # get the most update version of everything
-    # log "reseting submodules..."
-    # git submodule foreach git reset --hard 
+    log "reseting submodules..."
+    git submodule foreach git reset --hard 
 
-    # log "updating submodules..."
-    # git submodule update --remote
+    log "updating submodules..."
+    git submodule update --remote
 
     #log "pulling last submodules changes..."
     # git pull --recurse-submodules 

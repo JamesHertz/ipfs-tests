@@ -22,10 +22,21 @@ function abort(){
    stop_all
 }
 
+function create_network {
+  # Check if network already exists
+  local net=$(docker network ls --filter name=$NETWORK -q)
+  if [ -z "$net" ] ; then
+    log "Creating network"
+    docker network create --driver overlay \
+            --subnet 192.169.0.0/16 $NETWORK
+  fi
+}
 
 function run_services(){
     trap 'abort' ERR
     trap 'abort' SIGINT
+
+    create_network
 
     log "Setting volumes..."
     docker volume rm "$VNAME" && docker volume create "$VNAME"
