@@ -11,14 +11,14 @@ KUBO_REPO=./repos/kubo-ipfs
 DEFAULT_KUBO_SUFFIX="default"
 
 # [ <name>:libp2p@version , ... ]
-NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.1" "normal:v0.21.1-normal")
+NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.2" "normal:v0.21.1-normal-v1")
 
 # output binary
 KUBO_OUTPUT_BIN=cmd/ipfs/ipfs
 
 # common version for all new new kubo versions
 LIBP2P_VERSION=v0.26.4-research
-KBUCKET_VERSION=v0.5.1-research-v2
+KBUCKET_VERSION=v0.5.1-research-v2.1
 
 # dependecies name
 LIBP2P=go-libp2p
@@ -40,6 +40,11 @@ WSERVER_DFILE=./images/master/Dockerfile
 KUBO_DFILE=./images/common/Dockerfile
 
 USAGE="usage: $0 [ --images | --bin | --all | --clean | --help ]"
+
+# --------------------
+#   Helper functions
+# --------------------
+
 function popd(){
     command popd $@ >> /dev/null 
 }
@@ -48,8 +53,44 @@ function pushd(){
     command pushd $@ >> /dev/null
 }
 
+function log(){
+    echo
+    echo "$1"
+    echo "-----------------------------------" 
+    echo 
+}
+
+function help(){
+    # TODO: have a line for each one of the flags
+    echo "$USAGE"
+    exit 0
+}
+
+function foreach-host(){
+    local cmd=$1
+    local v=
+
+    [ -z "$cmd" ] && return 1
+    [ "$2" = -v ] && v=1
+
+
+    local curr_host=$(hostname)
+    for host in `oarprint host`; do
+        if [ "$host" != "$curr_host" ] ; then
+            echo "> $host"
+
+            local shcmd='oarsh "$host" "$cmd"'
+            ! [ $v ] && shcmd="$shcmd > /dev/null"
+
+            eval "$shcmd"
+        fi
+    done
+
+    return 0
+}
+
 # receives the name suffix as argument
-function build_kubo_bin(){
+function build-kubo-bin(){
     local binary_name="ipfs-$1"
 
     echo -e "> building $binary_name..."
@@ -61,14 +102,11 @@ function build_kubo_bin(){
     echo
 }
 
-function log(){
-    echo
-    echo "$1"
-    echo "-----------------------------------" 
-    echo 
-}
+# ------------------
+#   Important Part
+# ------------------
 
-function build_binaries(){
+function build-binaries(){
     # if bin doesn't exists generate it :)
     ! [ -d "$OUTBIN" ] &&  mkdir "$OUTBIN"
     # delete everyting inside outbin
@@ -100,7 +138,7 @@ function build_binaries(){
     log "building kubo versions"
     # generate the default version 
     pushd "$KUBO_REPO" 
-        build_kubo_bin "$DEFAULT_KUBO_SUFFIX"
+        build-kubo-bin "$DEFAULT_KUBO_SUFFIX"
 
         # set up default dependecies
         go mod edit -replace "github.com/libp2p/$LIBP2P"="github.com/JamesHertz/$LIBP2P@$LIBP2P_VERSION"
@@ -114,18 +152,18 @@ function build_binaries(){
                 exit 1
             fi
 
-            kubo_prefix=${values[0]}
-            dht_version=${values[1]}
+            local kubo_prefix=${values[0]}
+            local dht_version=${values[1]}
 
             go mod edit -replace "github.com/libp2p/$DHT"="github.com/JamesHertz/$DHT@$dht_version"
 
-            build_kubo_bin "$kubo_prefix"
+            build-kubo-bin "$kubo_prefix"
         done
 
     popd 
 }
 
-function build_images(){
+function build-images(){
 
     log "building images..."
 
@@ -152,43 +190,60 @@ function build_images(){
 
 }
 
-function help(){
-    # TODO: have a line for each one of the flags
-    echo "$USAGE"
-    exit 0
+function create-swarm {
+    if docker info | grep -q 'Swarm: active'; then
+        echo "--> Swarm already exists"
+        return 0
+    fi
+
+    echo "--> Creating a new swarm"
+    docker swarm init
+    join_command=$(docker swarm join-token worker | sed -n "3p")
+    echo "--> Adding hosts as workers"
+    foreach-host "$join_command" -v
 }
+
+function setup-nodes-images(){
+    build-images
+    foreach-host 'cd $HOME/ipfs-tests && ./build.sh --images'
+}
+
 
 function main() {
 
     case $1 in
         --images) 
-            build_images
+            build-images
         ;;
-        --bin)
-            build_binaries
-        ;;
-        --all|'')
-            build_binaries
-            build_images
-        ;;
-        --cluster)
-           # builds images on a cluster :)
-           curr_host=$(hostname)
-           for host in `oarprint host`; do
-            if [ "$host" = "$curr_host" ] ; then
-                build_images
-            else
-                oarsh "$host" 'cd $HOME/ipfs-tests && ./build.sh --images'
-            fi
-           done
 
+        --bin)
+            build-binaries
         ;;
+
+        --all|'')
+            build-binaries
+            build-images
+        ;;
+
+        --setup)
+            log "creating swarm..."
+            create-swarm
+            log "Building images..."
+            setup-nodes-images
+        ;;
+
+        --cluster)
+            log "Setting up images in nodes..." 
+            setup-nodes-images
+        ;;
+
         --clean)
             log "cleaning unamed images"
             images=$(docker images --filter "dangling=true" -q --no-trunc)
             [ -n "$images" ] && docker rmi $images
             exit 0
         ;;
+
         --help)
             help 
         ;;

@@ -37,8 +37,12 @@ function main(){
     ipfs init ; ipfs bootstrap rm --all
 
     log "Setting configurations..."
+
     # to avoid confusion
     ipfs config Discovery.MDNS.Enabled --bool false 
+    # reduce resource 
+    ipfs config Swarm.ConnMgr.LowWater --json 20
+    ipfs config Swarm.ConnMgr.HighWater --json 30
 
     cp -r ~/.ipfs $BASE_REPO
     #tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal

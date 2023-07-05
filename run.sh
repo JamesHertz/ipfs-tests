@@ -9,6 +9,7 @@ VOLUME="type=bind,source=$OUT_LOGS,target=/logs"
 #REPLICAS=2
 USAGE="usage: $0 [ --run | --logs | --help | --clean ]"
 LOGS_DIR=logs
+IPFS_ENV_FILE=.ipfs-env
 
 function log(){
     echo -e "\n$1\n-----------------------"
@@ -61,12 +62,14 @@ function run-services(){
     log "Launching ipfs-normal replicas..."
     docker service create --name ipfs-normal --replicas 2 \
         --cap-add=NET_ADMIN --mount "$VOLUME" \
-        --restart-condition=none --network "$NETWORK" ipfs-normal
+        --restart-condition=none --network "$NETWORK" \
+        --env-file="$IPFS_ENV_FILE" ipfs-normal
 
     log "Launching ipfs-secure replicas..."
     docker service create --name ipfs-secure --replicas 2 \
         --cap-add=NET_ADMIN --mount "$VOLUME" \
-        --restart-condition=none --network "$NETWORK" ipfs-secure
+        --restart-condition=none --network "$NETWORK" \
+        --env-file="$IPFS_ENV_FILE" ipfs-secure
 
     echo -e "\nDone!!!\n"
 }
