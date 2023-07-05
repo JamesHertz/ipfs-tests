@@ -45,7 +45,7 @@ function main(){
     ipfs config Swarm.ConnMgr.HighWater --json 30
 
     cp -r ~/.ipfs $BASE_REPO
-    #tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
+    tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
 
     NODE_ID=$(ipfs id --format='<id>')
 

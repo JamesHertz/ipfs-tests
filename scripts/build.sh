@@ -1,6 +1,11 @@
 #! /usr/bin/env bash
 set -e
 
+
+# FIXME: ...
+source utils.sh && cd ..
+
+
 # ------------------
 #   Binaries
 # ------------------
@@ -45,48 +50,10 @@ USAGE="usage: $0 [ --images | --bin | --all | --clean | --help ]"
 #   Helper functions
 # --------------------
 
-function popd(){
-    command popd $@ >> /dev/null 
-}
-
-function pushd(){
-    command pushd $@ >> /dev/null
-}
-
-function log(){
-    echo
-    echo "$1"
-    echo "-----------------------------------" 
-    echo 
-}
-
 function help(){
     # TODO: have a line for each one of the flags
     echo "$USAGE"
     exit 0
-}
-
-function foreach-host(){
-    local cmd=$1
-    local v=
-
-    [ -z "$cmd" ] && return 1
-    [ "$2" = -v ] && v=1
-
-
-    local curr_host=$(hostname)
-    for host in `oarprint host`; do
-        if [ "$host" != "$curr_host" ] ; then
-            echo "> $host"
-
-            local shcmd='oarsh "$host" "$cmd"'
-            ! [ $v ] && shcmd="$shcmd > /dev/null"
-
-            eval "$shcmd"
-        fi
-    done
-
-    return 0
 }
 
 # receives the name suffix as argument
@@ -108,9 +75,8 @@ function build-kubo-bin(){
 
 function build-binaries(){
     # if bin doesn't exists generate it :)
-    ! [ -d "$OUTBIN" ] &&  mkdir "$OUTBIN"
     # delete everyting inside outbin
-    rm -rf $OUTBIN/* 
+    rm -rf "$OUTBIN" && mkdir -p "$OUTBIN"
 
     # get the most update version of everything
     log "reseting submodules..."
@@ -190,27 +156,7 @@ function build-images(){
 
 }
 
-function create-swarm {
-    if docker info | grep -q 'Swarm: active'; then
-        echo "--> Swarm already exists"
-        return 0
-    fi
-
-    echo "--> Creating a new swarm"
-    docker swarm init
-    join_command=$(docker swarm join-token worker | sed -n "3p")
-    echo "--> Adding hosts as workers"
-    foreach-host "$join_command" -v
-}
-
-function setup-nodes-images(){
-    build-images
-    foreach-host 'cd $HOME/ipfs-tests && ./build.sh --images'
-}
-
-
 function main() {
-
     case $1 in
         --images) 
             build-images
@@ -223,18 +169,6 @@ function main() {
         --all|'')
             build-binaries
             build-images
-        ;;
-
-        --setup)
-            log "creating swarm..."
-            create-swarm
-            log "Building images..."
-            setup-nodes-images
-        ;;
-
-        --cluster)
-            log "Setting up images in nodes..." 
-            setup-nodes-images
         ;;
 
         --clean)

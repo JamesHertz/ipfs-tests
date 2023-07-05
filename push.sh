@@ -3,11 +3,16 @@
 set -e
 
 # cluster arch
+source ./scripts/utils.sh
 
+files="scripts/ images/"
 case $1 in
     --build) 
-        GOARCH=amd64 ./build.sh --bin
+        pushd ./scripts
+            GOARCH=amd64 ./build.sh --bin
+        popd
+        files="$files bin/"
     ;;
 esac
 
-scp -r build.sh run.sh bin/ images/ dicluster:~/ipfs-tests
+scp -r $files dicluster:~/ipfs-tests

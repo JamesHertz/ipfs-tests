@@ -4,16 +4,15 @@ set -e
 
 NETWORK=sipfs-net
 # VNAME=ipfs-logs
-OUT_LOGS=~/.ipfs-logs
+OUT_LOGS=~/.ipfs-exp/logs
 VOLUME="type=bind,source=$OUT_LOGS,target=/logs"
 #REPLICAS=2
 USAGE="usage: $0 [ --run | --logs | --help | --clean ]"
 LOGS_DIR=logs
+# TODO: think of something better than this
 IPFS_ENV_FILE=.ipfs-env
 
-function log(){
-    echo -e "\n$1\n-----------------------"
-}
+source utils.sh
 
 function stop-all(){
    docker service ls --format "{{.ID}}" | xargs -r docker service rm
@@ -49,7 +48,7 @@ function run-services(){
 
     log "Setting volumes..."
     [ -d "$OUT_LOGS" ] && rm -rf "$OUT_LOGS"
-    mkdir "$OUT_LOGS"
+    mkdir -p "$OUT_LOGS"
 
     # TODO: 
     #   - setup values for Kbucket size and number of stream
