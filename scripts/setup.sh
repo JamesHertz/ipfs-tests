@@ -1,8 +1,11 @@
 #! /usr/bin/env bash
 
+set -e
+
 source utils.sh
 REPOS_DIR="$SHARED_FOLDER/repos"
 FILES_DIR="$SHARED_FOLDER/files"
+CID_FILE="$SHARED_FOLDER/cids.txt"
 USAGE="usage: $0 [ --init | --init-files | --init-repos | --help ]"
 
 
@@ -38,22 +41,71 @@ function init-ipfs-repo(){
     ipfs config Swarm.ConnMgr.HighWater --json 50
 }
 
-function gen-repos(){
-    rm -rf $REPOS_DIR && mkdir -p $REPOS_DIR
 
+function gen-files(){
+    rm -rf $FILES_DIR && mkdir -p $FILES_DIR
+    
     log "Generating files..."
+
     for ((f=0; f < FILES_NR;f++)) ; do
         local filename="$FILES_DIR/file-$f"
         echo " * $filename"
-        local err=$(dd bs=1M count="$FILE_SIZE" if=/dev/random of="$filename" 2>&1) \
+        local err=$(dd bs=1M count="$FILE_SIZE" if=/dev/random of="$filename" 2>&1 ) \
             || error "$err"
     done
 
     echo -e "generated $FILES_NR files\n"
 }
 
-function gen-files(){
-    rm -rf $FILES_DIR && mkdir -p $FILES_DIR
+function gen-cids_real(){
+    log "Generating cids..."
+
+    export IPFS_PATH=/tmp/.ipfs
+
+    ipfs init > /dev/null  \
+        || echo "Ipfs repo already exists, let's move on"
+
+    echo -n > "$CID_FILE"
+
+    local filename=/tmp/my-file
+    for ((f=0; f < $FILES_NR;f++)) ; do
+        local err=$(dd bs=1M count="$FILE_SIZE" if=/dev/random of="$filename" 2>&1 ) \
+            || error "$err"
+        local cid=$(ipfs add -q "$filename" 2>&1) || error "$cid"
+
+        echo "$cid" >> "$CID_FILE"
+        echo "* generated cid-$f"
+    done
+
+    rm -rf "$IPFS_PATH" # removed ipfs repo :)
+    echo -e "Generated $FILE_SIZE cids\n"
+}
+
+function gen-cids(){
+    log "Generating cids..."
+
+    export IPFS_PATH=/tmp/.ipfs
+    local tmpfile=/tmp/cids.txt
+
+    ipfs init > /dev/null  \
+        || echo "Ipfs repo already exists, let's move on"
+
+    echo -n > "$tmpfile"
+
+    for ((f=0; f < $FILES_NR;f++)) ; do
+        local filename="$FILES_DIR/file-$f"
+        cid=$(ipfs add -q "$filename" 2>&1) || error "$cid"
+        echo "$cid" >> "$tmpfile"
+        echo "* generated cid-$f"
+    done
+
+    mv "$tmpfile" "$CID_FILE"
+    rm -rf "$IPFS_PATH"
+    echo -e "Generated $FILE_SIZE cids\n"
+}
+
+function gen-repos(){
+    rm -rf $REPOS_DIR && mkdir -p $REPOS_DIR
 
     log "Generating repos..."
     for ((r=0; r < REPOS_NR; r++)) ; do
@@ -69,12 +121,18 @@ function main(){
 
     case $1 in 
         --init)
+            # gen-cids
             gen-files
             gen-repos
         ;;
 
         --init-files)
             gen-files
+        ;;
+
+
+        --init-cids)
+            gen-cids
         ;;
 
         --init-repos)

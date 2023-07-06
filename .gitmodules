@@ -1,10 +1,11 @@
 [submodule "repos/ipfs-client"]
 	path = repos/ipfs-client
 	url = https://github.com/JamesHertz/ipfs-client.git
-[submodule "repos/webmaster"]
-	path = repos/webmaster
-	url = https://github.com/JamesHertz/webmaster.git
 [submodule "repos/kubo-ipfs"]
 	path = repos/kubo-ipfs
 	url = https://github.com/JamesHertz/kubo.git
 	branch = experiments
+[submodule "repos/root-node"]
+	path = repos/root-node
+	url = https://github.com/JamesHertz/kubo.git
+	branch = boot-node

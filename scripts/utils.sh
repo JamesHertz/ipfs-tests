@@ -1,7 +1,7 @@
 export SHARED_FOLDER=~/.ipfs-exp
 
 export REPOS_NR=800
-export FILES_NR=$((40*REPOS_NR))
+ export FILES_NR=$((40*REPOS_NR))
 # in megabytes
 export FILE_SIZE=10
 
