@@ -13,10 +13,24 @@ function save_logs(){
     done
 }
 
+function calc_seq_num(){
+    local total=
+    case $MODE in
+        default|normal)
+            total=$((REPLICA_ID-1))
+        ;;
+        secure)
+            total=$((REPPLICA_ID-1+EXP_TOTAL_NODES/2))
+        ;;
+    esac
+
+    echo $((total+EXP_BOOT_NODES))
+}
+
 # others useful enviroment variables
 export LOG_DIR=~/log
+export NODE_SEQ_NUM=$(calc_seq_num)
 DIRS="$LOG_DIR $SHARED_DIR"
-
 
 function main(){
 
@@ -25,9 +39,9 @@ function main(){
     mkdir -p $DIRS
 
     log "Initializing node..."
-    #  TODO: choose a repo based on NODE_SEQ_NUM
+    #  chooses a repo based on NODE_SEQ_NUM
+    cp -r "$EXP_REPOS_DIR/ipfs-$NODE_SEQ_NUM" ~/.ipfs
 
-    # cp -r ~/.ipfs $BASE_REPO
     tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
 
     NODE_ID=$(ipfs id --format='<id>')

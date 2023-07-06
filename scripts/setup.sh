@@ -41,6 +41,10 @@ function init-ipfs-repo(){
 }
 
 function gen-cids(){
+
+    # TODO: Either generate the cids by hashing only the files or do 
+    #       a python script to take the txt and turn it into json
+
     log "Generating cids..."
 
     export IPFS_PATH=/tmp/.ipfs
@@ -54,38 +58,15 @@ function gen-cids(){
     for ((f=0; f < $FILES_NR;f++)) ; do
         local err=$(dd bs=1M count="$FILE_SIZE" if=/dev/random of="$filename" 2>&1 ) \
             || error "$err"
-        local cid=$(ipfs add -q "$filename" 2>&1) || error "$cid"
+        local cid=$(ipfs add -q --hash-only "$filename" 2>&1) || error "$cid"
 
         echo "$cid" >> "$CID_FILE"
         echo "* generated cid-$f"
     done
 
     rm -rf "$IPFS_PATH" # removed ipfs repo :)
-    echo -e "Generated $FILE_SIZE cids\n"
+    echo -e "Generated $FILES_NR cids\n"
 }
-
-# function gen-cids(){
-#     log "Generating cids..."
-
-#     export IPFS_PATH=/tmp/.ipfs
-#     local tmpfile=/tmp/cids.txt
-
-#     ipfs init > /dev/null  \
-#         || echo "Ipfs repo already exists, let's move on"
-
-#     echo -n > "$tmpfile"
-
-#     for ((f=0; f < $FILES_NR;f++)) ; do
-#         local filename="$FILES_DIR/file-$f"
-#         cid=$(ipfs add -q "$filename" 2>&1) || error "$cid"
-#         echo "$cid" >> "$tmpfile"
-#         echo "* generated cid-$f"
-#     done
-
-#     mv "$tmpfile" "$CID_FILE"
-#     rm -rf "$IPFS_PATH"
-#     echo -e "Generated $FILE_SIZE cids\n"
-# }
 
 function gen-repos(){
     rm -rf $REPOS_DIR && mkdir -p $REPOS_DIR
@@ -105,7 +86,6 @@ function main(){
     case $1 in 
         --init)
             gen-cids
-            # gen-files
             gen-repos
         ;;
 
