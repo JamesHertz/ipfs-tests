@@ -3,7 +3,7 @@ set -e
 
 
 # FIXME: ...
-source utils.sh && cd ..
+source scripts/utils.sh 
 
 
 # ------------------

@@ -2,7 +2,8 @@
 
 set -e
 
-source utils.sh
+source scripts/utils.sh
+
 REPOS_DIR="$SHARED_FOLDER/repos"
 FILES_DIR="$SHARED_FOLDER/files"
 CID_FILE="$SHARED_FOLDER/cids.txt"

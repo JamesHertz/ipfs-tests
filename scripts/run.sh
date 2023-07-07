@@ -12,7 +12,7 @@ LOGS_DIR=logs
 # TODO: think of something better than this
 IPFS_ENV_FILE=.ipfs-env
 
-source utils.sh
+source scripts/utils.sh
 
 function stop-all(){
    docker service ls --format "{{.ID}}" | xargs -r docker service rm
