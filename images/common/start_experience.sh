@@ -14,13 +14,15 @@ function save_logs(){
 }
 
 function calc_seq_num(){
-    local total=
+    local total=$((REPLICA_ID-1))
     case $MODE in
-        default|normal)
-            total=$((REPLICA_ID-1))
+        default)
+        ;;
+        normal)
+            total=$((2*total))
         ;;
         secure)
-            total=$((REPPLICA_ID-1+EXP_TOTAL_NODES/2))
+            total=$((2*total+1))
         ;;
     esac
 
@@ -56,7 +58,7 @@ function main(){
     echo "{\"id\": \"$NODE_ID\", \"mode\": \"$MODE\"}" >> "$SHARED_DIR/$NODE_ID.info"
 
     # wait a bit
-    sleep 15 && ./ipfs-client --mode=$MODE >> "$LOG_DIR/client.log" 2>&1
+    sleep 20 && ./ipfs-client --mode=$MODE >> "$LOG_DIR/client.log" 2>&1
 
     log "Killing daemon..."
 
