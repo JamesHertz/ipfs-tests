@@ -44,8 +44,8 @@ WSERVER_IMAGE=webmaster
 CLIENT_BIN="ipfs-client"
 
 # webserver and kubo docker file
-WSERVER_DFILE=./images/master/Dockerfile
 KUBO_DFILE=./images/common/Dockerfile
+BOOT_DFILE=./images/boot-nodes/Dockerfile
 
 USAGE="usage: $0 [ --images | --bin | --all | --clean | --help ]"
 
@@ -121,7 +121,7 @@ function build-binaries(){
         new-dht-default-depencies 
         switch-dht-depency "${values[1]}"
 
-        build-kubo-bin "new-dht-boot"
+        build-kubo-bin "upgradable-boot"
     popd 
 
 
@@ -157,9 +157,6 @@ function build-images(){
 
     log "building images..."
 
-    echo "> building $WSERVER_IMAGE"
-    docker build -t "$WSERVER_IMAGE" --file "$WSERVER_DFILE" .
-
     for file in ./bin/ipfs-* ; do
         local binary_name=$(basename "$file")
 
@@ -177,6 +174,19 @@ function build-images(){
             echo
         fi
     done
+
+    for file in ./bin/*-boot ; do
+        local binary_name=$(basename "$file")
+
+        IFS='-' read -ra values <<< "$binary_name"
+        local setup=${values[0]}
+
+        echo -e "> building $binary_name" 
+        docker build -t "$binary_name" \
+            --build-arg "setup=$setup" --file "$BOOT_DFILE" . 
+        echo
+    done
+
 
 }
 
