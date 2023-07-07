@@ -13,6 +13,9 @@ source scripts/utils.sh
 OUTBIN=$PWD/bin
 
 KUBO_REPO=./repos/kubo-ipfs
+CLIENT_REPO=./repos/ipfs-client
+BOOT_REPO=./repos/boot-nodes
+
 DEFAULT_KUBO_SUFFIX="default"
 
 # [ <name>:libp2p@version , ... ]
@@ -58,7 +61,7 @@ function help(){
 
 # receives the name suffix as argument
 function build-kubo-bin(){
-    local binary_name="ipfs-$1"
+    local binary_name=$1
 
     echo -e "> building $binary_name..."
 
@@ -67,6 +70,17 @@ function build-kubo-bin(){
     cp "$KUBO_OUTPUT_BIN" "$OUTBIN/$binary_name"
 
     echo
+}
+
+# set up default dependecies
+function new-dht-default-depencies(){
+    go mod edit -replace "github.com/libp2p/$LIBP2P"="github.com/JamesHertz/$LIBP2P@$LIBP2P_VERSION"
+    go mod edit -replace "github.com/libp2p/$KBUCKET"="github.com/JamesHertz/$KBUCKET@$KBUCKET_VERSION"
+}
+
+function switch-dht-depency(){
+    local new_version=$1
+    go mod edit -replace "github.com/libp2p/$DHT"="github.com/JamesHertz/$DHT@$new_version"
 }
 
 # ------------------
@@ -88,27 +102,35 @@ function build-binaries(){
     #log "pulling last submodules changes..."
     # git pull --recurse-submodules 
 
-    log "building auxiliar binaries..."
+    log "building client binaries"
     # generate ipfs-client and webmaster binaries
-    for dir in ./repos/* ; do
-        # skip kubo repo :)
-        [ "$dir" = "$KUBO_REPO" ] && continue
-        pushd "$dir"
-            if [ -f Makefile ] ; then 
-                echo "> building $dir"  
-                make clean > /dev/null && GOOS='linux' make && cp bin/* "$OUTBIN"
-            fi
-        popd 
-    done
+    pushd "$CLIENT_REPO"
+        if [ -f Makefile ] ; then 
+            echo "> building $CLIENT_REPO"  
+            make clean > /dev/null && GOOS='linux' make && cp bin/* "$OUTBIN"
+        fi
+    popd 
+
+    log "building root versions"
+    pushd "$BOOT_REPO"
+        build-kubo-bin "default-boot"
+
+        IFS=':' read -ra values <<< "${NEW_KUBO_VERSIONS[0]}"
+
+        # setup depencies
+        new-dht-default-depencies 
+        switch-dht-depency "${values[1]}"
+
+        build-kubo-bin "new-dht-boot"
+    popd 
+
 
     log "building kubo versions"
     # generate the default version 
     pushd "$KUBO_REPO" 
-        build-kubo-bin "$DEFAULT_KUBO_SUFFIX"
+        build-kubo-bin "ipfs-$DEFAULT_KUBO_SUFFIX"
 
-        # set up default dependecies
-        go mod edit -replace "github.com/libp2p/$LIBP2P"="github.com/JamesHertz/$LIBP2P@$LIBP2P_VERSION"
-        go mod edit -replace "github.com/libp2p/$KBUCKET"="github.com/JamesHertz/$KBUCKET@$KBUCKET_VERSION"
+        new-dht-default-depencies
 
         for version_info in ${NEW_KUBO_VERSIONS[@]}; do
 
@@ -118,12 +140,14 @@ function build-binaries(){
                 exit 1
             fi
 
-            local kubo_prefix=${values[0]}
+            local kubo_suffix=${values[0]}
             local dht_version=${values[1]}
 
-            go mod edit -replace "github.com/libp2p/$DHT"="github.com/JamesHertz/$DHT@$dht_version"
+            echo "dht-version: $dht_version"
+            # go mod edit -replace "github.com/libp2p/$DHT"="github.com/JamesHertz/$DHT@$dht_version"
+            switch-dht-depency "$dht_version"
 
-            build-kubo-bin "$kubo_prefix"
+            build-kubo-bin "ipfs-$kubo_suffix"
         done
 
     popd 

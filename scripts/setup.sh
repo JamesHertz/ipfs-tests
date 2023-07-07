@@ -10,6 +10,7 @@ CID_FILE="$SHARED_FOLDER/cids.txt"
 USAGE="usage: $0 [ --init | --init-files | --init-repos | --help ]"
 
 function create-swarm {
+    log "creating swarm..."
     if docker info | grep -q 'Swarm: active'; then
         echo "--> Swarm already exists"
         return 0
@@ -23,8 +24,9 @@ function create-swarm {
 }
 
 function setup-nodes-images(){
-    build-images
-    foreach-host 'cd $HOME/ipfs-tests && ./build.sh --images'
+    log "Building images..."
+    ./scripts/build.sh --images
+    foreach-host 'cd $HOME/ipfs-tests && ./scripts/build.sh --images'
 }
 
 function ipfs(){
@@ -91,12 +93,11 @@ function main(){
         ;;
 
         --experiment)
-            log "creating swarm..."
             create-swarm
+            setup-nodes-images
         ;;
 
         --swarm)
-            log "creating swarm..."
             create-swarm
         ;;
 
