@@ -1,7 +1,7 @@
 #!/usr/bin/env bash 
 
 set -e 
-export NODE_SEQ_NUM=REPLICA_ID
+export NODE_SEQ_NUM=$((REPLICA_ID-1))
 
 function main(){
     cp -r "$EXP_REPOS_DIR/ipfs-$NODE_SEQ_NUM" ~/.ipfs

@@ -1,0 +1,17 @@
+# environment variables used for testing
+
+EXP_DURATION=3
+# set this one below :)
+REPLICA_ID={{.Task.Slot}}
+EXP_SHARED_DIR=/exp
+EXP_REPO_DIR=$EXP_SHARED_DIR/repos
+EXP_CIDS_FILE=$EXP_SHARED_DIR/cids.txt
+EXP_BOOT_DIR=$EXP_SHARED_DIR/boot
+
+EXP_BOOT_NODES=5
+
+# ....
+EXP_CIDS_PER_NODE=
+EXP_BOOT_FILE=
+EXP_BOOT_DIR=
+EXP_TOTAL_NODES=
