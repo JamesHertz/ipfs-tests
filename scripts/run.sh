@@ -2,16 +2,18 @@
 
 set -e 
 
+REPLICAS=20
 NETWORK=sipfs-net
-# VNAME=ipfs-logs
-OUT_LOGS=~/.ipfs-exp/logs
-VOLUME="type=bind,source=$OUT_LOGS,target=/logs"
-#REPLICAS=2
+
+SHARED_DIR==~/.ipfs-exp
+OUT_LOGS=$SHARED_DIR/logs
+VOLUME="type=bind,source=$SHARED_DIR,target=/exp"
 USAGE="usage: $0 [ --run | --logs | --help | --clean ]"
 LOGS_DIR=logs
-# TODO: think of something better than this
 IPFS_ENV_FILE=.ipfs-env
 
+# TODO: set this
+# source .ipfs-env
 source scripts/utils.sh
 
 function stop-all(){
@@ -39,7 +41,11 @@ function get-hosts(){
  
 function run-services(){
 
-    # clear logs dir
+    # TODO: 
+    #    - launch the boot nodes
+    #    - wait for them to finish and generate the EXP_BOOT_FILE
+    #    - run all the nodes and wait to the experiment to end
+
 
     trap 'abort' ERR
     trap 'abort' SIGINT
