@@ -1,5 +1,4 @@
-FROM debian
-
+FROM ubuntu
 ARG setup 
 
 ENV HOME=/$setup/home

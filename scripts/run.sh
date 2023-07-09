@@ -10,7 +10,7 @@ set +a
 source scripts/utils.sh
 
 # experiment folders and files
-export SHARED_LOG_DIR=$SHARED_DIR/$(basename $LOG_DIR)
+export SHARED_LOG_DIR=$SHARED_DIR/$(basename $EXP_LOG_DIR)
 export SHARED_BOOT_DIR=$SHARED_DIR/$(basename $EXP_BOOT_DIR)
 export BOOT_FILE=$SHARED_BOOT_DIR/$(basename $EXP_BOOT_FILE)
 
@@ -114,10 +114,10 @@ function run-experiment(){
     esac
 
 
-    trap 'abort' ERR
-    trap 'abort' SIGINT
+    # trap 'abort' ERR
+    # trap 'abort' SIGINT
 
-    create-network
+    # create-network
 
     log "Setting volumes..."
     rm -rf $EXP_DIRS && mkdir -p $EXP_DIRS
@@ -129,6 +129,7 @@ function run-experiment(){
     # log "Waiting 2 minutes and Building boot file..."
     # # wait a bit and build boot-file
     # sleep 120 && scripts/boot-file-builder.py
+    sleep 60 && scripts/boot-file-builder.py
 
     # $experiment
     # # sleep ((EXP_TIME*60+120)) && get-logs # should I?

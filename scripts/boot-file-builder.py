@@ -9,7 +9,7 @@ log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
 def main():
     log.info("started bfile-builder.py")
     boot_addrs = []
-    boot_dir   = os.getenv("EXP_BOOT_DIR")
+    boot_dir   = os.getenv("SHARED_BOOT_DIR")
     boot_nodes = int(os.getenv("EXP_BOOT_NODES"))
 
     for filename in os.listdir(boot_dir):
@@ -23,7 +23,7 @@ def main():
         log.fatal("Too early, expected %d peer address but found %d", boot_nodes, len(boot_addrs))
         sys.exit(1)
 
-    boot_file = os.getenv("EXP_BOOT_FILE")
+    boot_file = os.getenv("BOOT_FILE")
     with open(boot_file, "w+") as file:
         file.write(json.dumps(boot_addrs, indent=4))
 

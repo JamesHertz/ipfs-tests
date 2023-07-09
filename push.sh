@@ -10,4 +10,4 @@ case $1 in
     ;;
 esac
 
-make -q && scp -r $files dicluster:~/ipfs-tests
+make -s && scp -r $files dicluster:~/ipfs-tests

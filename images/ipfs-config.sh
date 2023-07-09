@@ -1,7 +1,7 @@
 function setup-ipfs-repo(){
 
     # gets the repo
-    cp -r "$EXP_REPOS_DIR/repo-$NODE_SEQ_NUM" ~/.ipfs
+    cp -r "$EXP_REPOS_DIR/repo-$REPO_ID" ~/.ipfs
 
     # to reset the it's addresses
     ipfs config profile apply default-networking 

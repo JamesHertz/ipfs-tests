@@ -1,4 +1,4 @@
-FROM debian
+FROM ubuntu
 ARG binary
 ARG mode
 

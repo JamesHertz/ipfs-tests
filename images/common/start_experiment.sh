@@ -11,7 +11,8 @@ function log(){
 function save_logs(){
     # FIXME: find a better solution
     for file in ${LOG_DIR}/* ; do 
-        mv "$file" "$SHARED_DIR/$NODE_ID-$(basename "$file")"
+        echo "copying: $file to $EXP_LOG_DIR/$NODE_ID-$(basename "$file")"
+        mv "$file" "$EXP_LOG_DIR/$NODE_ID-$(basename "$file")"
     done
 }
 
@@ -28,14 +29,15 @@ function calc_seq_num(){
         ;;
     esac
 
-    echo $((total+EXP_BOOT_NODES))
+    echo $total
 }
 
 # others useful enviroment variables
 export LOG_DIR=~/log
 export NODE_SEQ_NUM=$(calc_seq_num)
+export REPO_ID=$((NODE_SEQ_NUM + EXP_BOOT_NODES))
 DIRS="$LOG_DIR $SHARED_DIR"
-# TODO: NODE_PREFFIX="node-$SEQ_NUM-$MODE"
+# TODO: NODE_PREFFIX="node-$REPO_ID-$MODE"
 
 function main(){
 
@@ -47,8 +49,6 @@ function main(){
 
     #  chooses a repo based on NODE_SEQ_NUM
     setup-ipfs-repo
-    # cp -r "$EXP_REPOS_DIR/repo-$NODE_SEQ_NUM" ~/.ipfs
-    # config-ipfs-repo
 
     tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
 
@@ -56,15 +56,13 @@ function main(){
 
     log "Starting experiments..."
 
-    echo -e "\n-- RUNNNING TRY: $i --\n"
-
     # start daemon
     ipfs daemon >> "$LOG_DIR/default.log" 2>&1 &
 
-    echo "{\"id\": \"$NODE_ID\", \"mode\": \"$MODE\"}" >> "$SHARED_DIR/$NODE_ID.info"
+    echo "{\"id\": \"$NODE_ID\", \"mode\": \"$MODE\"}" >> "$EXP_LOG_DIR/$NODE_ID.info"
 
     # wait a bit
-    sleep 20 && ./ipfs-client --mode=$MODE >> "$LOG_DIR/client.log" 2>&1
+    sleep 20 && ./ipfs-client --mode=$MODE #>> "$LOG_DIR/client.log" 2>&1
 
     log "Killing daemon..."
 
