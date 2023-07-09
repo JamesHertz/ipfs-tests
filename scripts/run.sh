@@ -3,18 +3,18 @@
 set -e 
 
 # env file
-IPFS_ENV_FILE=.ipfs-env
 
 set -a
-source $IPFS_ENV_FILE  # so as to save those variables in the enviroment
+source .env # so as to save those variables in the enviroment
 set +a 
 
 source scripts/utils.sh
 
 # experiment folders
+IPFS_ENV_FILE=.ipfs-env
 SHARED_LOG_DIR=$SHARED_DIR/$(basename $LOG_DIR)
 SHARED_BOOT_DIR=$SHARED_DIR/$(basename $EXP_BOOT_DIR)
-EXP_DIRS="$SHARED_BOOT_DIR $SHARED_BOOT_DIR"
+EXP_DIRS="$SHARED_LOG_DIR $SHARED_BOOT_DIR"
 
 # setup values
 NETWORK=sipfs-net
@@ -118,19 +118,19 @@ function run-experiment(){
     create-network
 
     log "Setting volumes..."
-    rm -rf $EXP_DIRS && mkdir -p "$OUT_LOGS"
+    rm -rf $EXP_DIRS && mkdir -p $EXP_DIRS
 
-    log "Launching bootstraps..."
-    docker service create --name boot-nodes --restart-condition=none \
-        --env-file="$IPFS_ENV_FILE" --network "$NETWORK"  "$boot_image"
+    # log "Launching bootstraps..."
+    # docker service create --name boot-nodes --restart-condition=none \
+    #     --env-file="$IPFS_ENV_FILE" --network "$NETWORK"  "$boot_image"
 
-    log "Waiting 2 minutes and Building boot file..."
-    # wait a bit and build boot-file
-    sleep 120 && scripts/boot-file-builder.py
+    # log "Waiting 2 minutes and Building boot file..."
+    # # wait a bit and build boot-file
+    # sleep 120 && scripts/boot-file-builder.py
 
-    $experiment
-    # sleep ((EXP_TIME*60+120)) && get-logs # should I?
-    echo -e "\nDone!!!\n"
+    # $experiment
+    # # sleep ((EXP_TIME*60+120)) && get-logs # should I?
+    # echo -e "\nDone!!!\n"
 }
 
 # function get-logs () {

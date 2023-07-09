@@ -33,6 +33,7 @@ function calc_seq_num(){
 export LOG_DIR=~/log
 export NODE_SEQ_NUM=$(calc_seq_num)
 DIRS="$LOG_DIR $SHARED_DIR"
+# TODO: NODE_PREFFIX="node-$SEQ_NUM-$MODE"
 
 function main(){
 

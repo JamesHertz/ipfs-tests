@@ -36,16 +36,14 @@ function foreach-host(){
     [ -z "$cmd" ] && return 1
     [ "$2" = -v ] && v=1
 
-
     local curr_host=$(hostname)
     for host in `oarprint host`; do
         if [ "$host" != "$curr_host" ] ; then
             echo "> $host"
-
-            local shcmd='oarsh "$host" "$cmd"'
-            ! [ $v ] && shcmd="$shcmd > /dev/null"
-
-            eval "$shcmd"
+            local redirect=$( [ $v ] && tty || echo '/dev/null' )
+            # I setted term because of an peculiar oarsh problem 
+            # with such environment variable
+            oarsh "$host" "export TERM=xterm && $cmd" > $redirect
         fi
     done
 

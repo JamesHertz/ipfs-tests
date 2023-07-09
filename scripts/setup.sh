@@ -24,9 +24,9 @@ function create-swarm {
 }
 
 function setup-nodes-images(){
-    log "Building images..."
+    log "Setting images in nodes"
     ./scripts/build.sh --images
-    foreach-host '$HOME/ipfs-tests/scripts/build.sh --images'
+    foreach-host 'cd $HOME/ipfs-tests && scripts/build.sh --images'
 }
 
 function ipfs(){
