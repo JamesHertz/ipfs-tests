@@ -33,15 +33,6 @@ function ipfs(){
     bin/ipfs-default $*
 }
 
-function init-ipfs-repo(){
-    ipfs init ; ipfs bootstrap rm --all
-
-    # to avoid confusion
-    ipfs config Discovery.MDNS.Enabled --bool false 
-    # reduce resource 
-    ipfs config Swarm.ConnMgr.LowWater --json 20
-    ipfs config Swarm.ConnMgr.HighWater --json 50
-}
 
 function gen-cids(){
 
@@ -78,7 +69,7 @@ function gen-repos(){
     for ((r=0; r < REPOS_NR; r++)) ; do
         local reponame="$REPOS_DIR/repo-$r"
         echo " * $reponame"
-        IPFS_PATH="$reponame" init-ipfs-repo > /dev/null
+        IPFS_PATH="$reponame" ipfs init > /dev/null
     done
 
     echo "generated $REPOS_NR repos"

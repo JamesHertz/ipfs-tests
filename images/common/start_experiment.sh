@@ -2,6 +2,8 @@
 
 set -e
 
+source ipfs-config.sh
+
 function log(){
     echo -e "\n$1\n------------------------------"
 }
@@ -42,8 +44,11 @@ function main(){
     mkdir -p $DIRS
 
     log "Initializing node..."
+
     #  chooses a repo based on NODE_SEQ_NUM
-    cp -r "$EXP_REPOS_DIR/repo-$NODE_SEQ_NUM" ~/.ipfs
+    setup-ipfs-repo
+    # cp -r "$EXP_REPOS_DIR/repo-$NODE_SEQ_NUM" ~/.ipfs
+    # config-ipfs-repo
 
     tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
 

@@ -115,7 +115,7 @@ function build-binaries(){
     pushd "$BOOT_REPO"
         build-kubo-bin "default-boot"
 
-        IFS=':' read -ra values <<< "${NEW_KUBO_VERSIONS[0]}"
+        IFS=':' read -ra values <<< "${NEW_KUBO_VERSIONS[1]}"
 
         # setup depencies
         new-dht-default-depencies 
