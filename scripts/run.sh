@@ -3,7 +3,6 @@
 set -e 
 
 # env file
-
 set -a
 source .env # so as to save those variables in the enviroment
 set +a 

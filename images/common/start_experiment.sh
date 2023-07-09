@@ -43,7 +43,7 @@ function main(){
 
     log "Initializing node..."
     #  chooses a repo based on NODE_SEQ_NUM
-    cp -r "$EXP_REPOS_DIR/ipfs-$NODE_SEQ_NUM" ~/.ipfs
+    cp -r "$EXP_REPOS_DIR/repo-$NODE_SEQ_NUM" ~/.ipfs
 
     tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
 
