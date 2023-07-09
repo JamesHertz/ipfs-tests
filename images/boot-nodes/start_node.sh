@@ -10,7 +10,8 @@ function main(){
     # cp -r "$EXP_REPOS_DIR/repo-$NODE_SEQ_NUM" ~/.ipfs
     setup-ipfs-repo
 
-    ipfs bootstrap && boot-client
+    ipfs daemon &
+    sleep 15 && boot-client
     sleep $((EXP_DURATION*60+600))
 }
 

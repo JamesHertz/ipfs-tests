@@ -9,13 +9,16 @@ set +a
 
 source scripts/utils.sh
 
-# experiment folders
-IPFS_ENV_FILE=.ipfs-env
-SHARED_LOG_DIR=$SHARED_DIR/$(basename $LOG_DIR)
-SHARED_BOOT_DIR=$SHARED_DIR/$(basename $EXP_BOOT_DIR)
+# experiment folders and files
+export SHARED_LOG_DIR=$SHARED_DIR/$(basename $LOG_DIR)
+export SHARED_BOOT_DIR=$SHARED_DIR/$(basename $EXP_BOOT_DIR)
+export BOOT_FILE=$SHARED_BOOT_DIR/$(basename $EXP_BOOT_FILE)
+
+
 EXP_DIRS="$SHARED_LOG_DIR $SHARED_BOOT_DIR"
 
 # setup values
+IPFS_ENV_FILE=.ipfs-env
 NETWORK=sipfs-net
 VOLUME="type=bind,source=$SHARED_DIR,target=/exp"
 
