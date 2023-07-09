@@ -124,9 +124,9 @@ function run-experiment(){
     docker service create --name boot-nodes --restart-condition=none \
         --env-file="$IPFS_ENV_FILE" --network "$NETWORK"  "$boot_image"
 
-    log "Waiting 2 minutes and Building BootFile..."
+    log "Waiting 2 minutes and Building boot file..."
     # wait a bit and build boot-file
-    sleep 120 && scripts/bfile-builder.py
+    sleep 120 && scripts/boot-file-builder.py
 
     $experiment
     # sleep ((EXP_TIME*60+120)) && get-logs # should I?

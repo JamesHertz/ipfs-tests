@@ -2,15 +2,10 @@
 
 set -e
 
-# cluster arch
-source ./scripts/utils.sh
-
-files="scripts/ images/"
+files="scripts/ images/ .ipfs-env"
 case $1 in
     --build) 
-        pushd ./scripts
-            GOARCH=amd64 ./build.sh --bin
-        popd
+        GOARCH=amd64 ./scripts/build.sh --bin
         files="$files bin/"
     ;;
 esac

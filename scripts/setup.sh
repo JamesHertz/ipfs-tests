@@ -4,9 +4,9 @@ set -e
 
 source scripts/utils.sh
 
-REPOS_DIR="$SHARED_FOLDER/repos"
-FILES_DIR="$SHARED_FOLDER/files"
-CID_FILE="$SHARED_FOLDER/cids.txt"
+REPOS_DIR="$SHARED_DIR/repos"
+FILES_DIR="$SHARED_DIR/files"
+CID_FILE="$SHARED_DIR/cids.txt"
 USAGE="usage: $0 [ --init | --init-files | --init-repos | --help ]"
 
 function create-swarm {
@@ -26,11 +26,11 @@ function create-swarm {
 function setup-nodes-images(){
     log "Building images..."
     ./scripts/build.sh --images
-    foreach-host 'cd $HOME/ipfs-tests && ./scripts/build.sh --images'
+    foreach-host '$HOME/ipfs-tests/scripts/build.sh --images'
 }
 
 function ipfs(){
-    ../bin/ipfs-default $*
+    bin/ipfs-default $*
 }
 
 function init-ipfs-repo(){
@@ -102,7 +102,6 @@ function main(){
         ;;
 
         --images)
-            log "Building images..."
             setup-nodes-images
         ;;
 

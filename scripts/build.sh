@@ -143,7 +143,6 @@ function build-binaries(){
             local kubo_suffix=${values[0]}
             local dht_version=${values[1]}
 
-            echo "dht-version: $dht_version"
             # go mod edit -replace "github.com/libp2p/$DHT"="github.com/JamesHertz/$DHT@$dht_version"
             switch-dht-depency "$dht_version"
 
