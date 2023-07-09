@@ -13,4 +13,4 @@ COPY bin/ipfs-client images/common/*.sh $HOME/
 RUN apt-get update \
     && apt-get install iproute2 -y 
 
-ENTRYPOINT ./start_experience.sh
+ENTRYPOINT ./start_experiment.sh

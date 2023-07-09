@@ -88,9 +88,9 @@ function new-exp(){
 # run main function
 function run-experiment(){
     # TODO: 
-    #    - launch the boot nodes
-    #    - wait for them to finish and generate the EXP_BOOT_FILE
-    #    - run all the nodes and wait to the experiment to end
+    #    x launch the boot nodes
+    #    x wait for them to finish and generate the EXP_BOOT_FILE
+    #    - run all the nodes and wait to the experiment to end (should I?)
 
     local boot_image=
     local experiment=
@@ -124,10 +124,12 @@ function run-experiment(){
     docker service create --name boot-nodes --restart-condition=none \
         --env-file="$IPFS_ENV_FILE" --network "$NETWORK"  "$boot_image"
 
+    log "Waiting 2 minutes and Building BootFile..."
     # wait a bit and build boot-file
     sleep 120 && scripts/bfile-builder.py
 
     $experiment
+    # sleep ((EXP_TIME*60+120)) && get-logs # should I?
     echo -e "\nDone!!!\n"
 }
 
