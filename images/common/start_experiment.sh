@@ -62,7 +62,7 @@ function main(){
     echo "{\"id\": \"$NODE_ID\", \"mode\": \"$MODE\"}" >> "$EXP_LOG_DIR/$NODE_ID.info"
 
     # wait a bit
-    sleep 20 && ./ipfs-client --mode=$MODE #>> "$LOG_DIR/client.log" 2>&1
+    sleep 20 && ./ipfs-client --mode=$MODE >> "$LOG_DIR/client.log" 2>&1
 
     log "Killing daemon..."
 

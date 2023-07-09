@@ -7,7 +7,16 @@ source scripts/utils.sh
 REPOS_DIR="$SHARED_DIR/repos"
 FILES_DIR="$SHARED_DIR/files"
 CID_FILE="$SHARED_DIR/cids.txt"
-USAGE="usage: $0 [ --init | --init-files | --init-repos | --help ]"
+USAGE="usage: $0 <option>
+
+Where the options are:
+    --init        does --init-cids and --init-repos
+    --init-repos  generates repos to be used on exeperiment
+    --init-cids   generates a file with cids to be used in th experiment
+    --experiment  creates a swarm and creates images in every hosts
+    --swarm       creates a swarm for the experiment (uses oar)
+    --help        displays the this message
+"
 
 function create-swarm {
     log "creating swarm..."

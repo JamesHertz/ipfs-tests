@@ -13,7 +13,7 @@ source scripts/utils.sh
 export SHARED_LOG_DIR=$SHARED_DIR/$(basename $EXP_LOG_DIR)
 export SHARED_BOOT_DIR=$SHARED_DIR/$(basename $EXP_BOOT_DIR)
 export BOOT_FILE=$SHARED_BOOT_DIR/$(basename $EXP_BOOT_FILE)
-
+OUT_LOGS=./logs
 
 EXP_DIRS="$SHARED_LOG_DIR $SHARED_BOOT_DIR"
 
@@ -30,10 +30,10 @@ NEW_EXP_ID=new
 USAGE="usage: $0 <command>
 
 The commands are:
-    run ${bold}<id>${normal}  - runs experiment identified by ${bold}<id>${normal} that can be ${bold}${BASE_EXP_ID}${normal} or ${bold}${NEW_EXP_ID}${normal}
-    logs      - clear and save logs in the LOG_DIR/ipfs-log-{count} dir
-    clean     - clear logs without saving them
-    help      - displays the usage 
+    run ${bold}<id>${normal}   runs experiment identified by ${bold}<id>${normal} that can be ${bold}${BASE_EXP_ID}${normal} or ${bold}${NEW_EXP_ID}${normal}
+    logs       clear and save logs in the ${bold}LOG_DIR/ipfs-log-{${normal}count${bold}}${normal} dir
+    clean      clear logs without saving them
+    help       displays the usage 
 "
 
 
@@ -99,12 +99,12 @@ function run-experiment(){
 
     case $1 in 
         $BASE_EXP_ID)
-            boot_image=upgradable-boot
+            boot_image=default-boot
             experiment=base-exp
         ;;
 
         $NEW_EXP_ID)
-            boot_image=default-boot
+            boot_image=upgradable-boot
             experiment=new-exp
         ;;
 
@@ -114,46 +114,49 @@ function run-experiment(){
     esac
 
 
-    # trap 'abort' ERR
-    # trap 'abort' SIGINT
+    trap 'abort' ERR
+    trap 'abort' SIGINT
 
-    # create-network
+    create-network
 
     log "Setting volumes..."
     rm -rf $EXP_DIRS && mkdir -p $EXP_DIRS
 
-    # log "Launching bootstraps..."
-    # docker service create --name boot-nodes --restart-condition=none \
-    #     --env-file="$IPFS_ENV_FILE" --network "$NETWORK"  "$boot_image"
+    log "Launching bootstraps..."
+    docker service create --name boot-nodes --restart-condition=none \
+        --env-file="$IPFS_ENV_FILE" --network "$NETWORK" --mount "$VOLUME" "$boot_image"
 
-    # log "Waiting 2 minutes and Building boot file..."
-    # # wait a bit and build boot-file
-    # sleep 120 && scripts/boot-file-builder.py
+    log "Waiting 1 minutes and Building boot file..."
+    # wait a bit and build boot-file
     sleep 60 && scripts/boot-file-builder.py
 
-    # $experiment
-    # # sleep ((EXP_TIME*60+120)) && get-logs # should I?
-    # echo -e "\nDone!!!\n"
+    $experiment
+
+    local wait_time=$((EXP_DURATION*60+300))
+    log "Waiting $((wait_time/60)) minutes to experiment end"
+
+    sleep "$wait_time" && get-logs # should I?
+    echo -e "\nDone!!!\n"
 }
 
-# function get-logs () {
+function get-logs () {
 
-#     log "Stopping services...."
-#     stop-all
+    log "Stopping services...."
+    stop-all
 
-#     log "Getting logs..."
-#     # decide the folder mane where the logs will be putted
-#     ! [ -d "$LOGS_DIR" ] && mkdir "$LOGS_DIR"
+    log "Getting logs..."
+    # decide the folder mane where the logs will be putted
+    ! [ -d "$OUT_LOGS" ] && mkdir "$OUT_LOGS"
 
-#     local count=$(ls "$LOGS_DIR" | wc -l | xargs)
+    local count=$(ls "$OUT_LOGS" | wc -l | xargs)
 
-#     local dst_log_dir="$LOGS_DIR/ipfs-logs"
-#     [ $count -gt 0 ] && dst_log_dir="$dst_log_dir-$count"
+    local dst_log_dir="$OUT_LOGS/ipfs-logs"
+    [ $count -gt 0 ] && dst_log_dir="$dst_log_dir-$count"
 
-#     cp "$OUT_LOGS" "$dst_log_dir"
+    cp -r "$SHARED_LOG_DIR" "$dst_log_dir"
 
-#     echo -e "\nLogs saved in: $dst_log_dir\n"
-# }
+    echo -e "\nLogs saved in: $dst_log_dir\n"
+}
 
 function main(){
     # reserve nodes: -t docker-swarm
@@ -161,9 +164,9 @@ function main(){
         run)
             run-experiment "$2"
         ;;
-        # logs)
-        #     get-logs
-        # ;;
+        logs)
+            get-logs
+        ;;
         clean)
             log "Stopping all the services"
             stop-all
