@@ -40,8 +40,8 @@ The commands are:
 # docker config
 
 
-COMMON_SERV_CFG="--memory=1g --env-file='$IPFS_ENV_FILE'
---restart-condition=none --network '$NETWORK' --mount '$VOLUME'"
+COMMON_SERV_CFG="--limit-memory=1GB --env-file=$IPFS_ENV_FILE
+--restart-condition=none --network $NETWORK --mount $VOLUME"
 
 # ---------------------
 #   Helping functions
@@ -53,6 +53,7 @@ function stop-all(){
 function abort(){
    echo "ERROR: aborting all services"
    stop-all
+   exit 1
 }
 
 function create-network {
@@ -60,7 +61,7 @@ function create-network {
   local net=$(docker network ls --filter name=$NETWORK -q)
   if [ -z "$net" ] ; then
     log "Creating network"
-    docker network create --driver overlay \
+    docker network create --driver overlay --attachable \
             --subnet 192.169.0.0/16 $NETWORK
   fi
 }
@@ -71,7 +72,7 @@ function create-network {
 function base-exp(){
     log "Launching ipfs-default replicas..."
     docker service create --name ipfs-default --replicas $EXP_TOTAL_NODES \
-        $COMMON_SERV_CFG ipfs-default
+        --cap-add=NET_ADMIN $COMMON_SERV_CFG ipfs-default
         # --cap-add=NET_ADMIN --mount "$VOLUME" \
         # --restart-condition=none --network "$NETWORK" \
         # --env-file="$IPFS_ENV_FILE" ipfs-default
@@ -83,14 +84,14 @@ function new-exp(){
 
     log "Launching ipfs-normal replicas..."
     docker service create --name ipfs-normal --replicas $half_nodes \
-        $COMMON_SERV_CFG ipfs-normal
+         --cap-add=NET_ADMIN $COMMON_SERV_CFG ipfs-normal
         # --cap-add=NET_ADMIN --mount "$VOLUME" \
         # --restart-condition=none --network "$NETWORK" \
         # --env-file="$IPFS_ENV_FILE" ipfs-normal
 
     log "Launching ipfs-secure replicas..."
     docker service create --name ipfs-secure --replicas $half_nodes \
-        $COMMON_SERV_CFG ipfs-secure
+        --cap-add=NET_ADMIN $COMMON_SERV_CFG ipfs-secure
         # --cap-add=NET_ADMIN --mount "$VOLUME" \
         # --restart-condition=none --network "$NETWORK" \
         # --env-file="$IPFS_ENV_FILE" ipfs-secure
