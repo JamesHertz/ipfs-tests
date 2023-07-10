@@ -123,8 +123,9 @@ function run-experiment(){
     rm -rf $EXP_DIRS && mkdir -p $EXP_DIRS
 
     log "Launching bootstraps..."
-    docker service create --name boot-nodes --restart-condition=none \
-        --env-file="$IPFS_ENV_FILE" --network "$NETWORK" --mount "$VOLUME" "$boot_image"
+    docker service create --name boot-nodes  --replicas $EXP_BOOT_NODES \
+        --restart-condition=none  --env-file="$IPFS_ENV_FILE" \
+        --network "$NETWORK" --mount "$VOLUME" "$boot_image"
 
     log "Waiting 1 minutes and Building boot file..."
     # wait a bit and build boot-file
