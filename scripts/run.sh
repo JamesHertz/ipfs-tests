@@ -37,6 +37,12 @@ The commands are:
 "
 
 
+# docker config
+
+
+COMMON_SERV_CFG="--memory=1g --env-file='$IPFS_ENV_FILE'
+--restart-condition=none --network '$NETWORK' --mount '$VOLUME'"
+
 # ---------------------
 #   Helping functions
 # ---------------------
@@ -64,10 +70,11 @@ function create-network {
 # -------------------------
 function base-exp(){
     log "Launching ipfs-default replicas..."
-    docker service create --name ipfs-normal --replicas $EXP_TOTAL_NODES \
-        --cap-add=NET_ADMIN --mount "$VOLUME" \
-        --restart-condition=none --network "$NETWORK" \
-        --env-file="$IPFS_ENV_FILE" ipfs-normal
+    docker service create --name ipfs-default --replicas $EXP_TOTAL_NODES \
+        $COMMON_SERV_CFG ipfs-default
+        # --cap-add=NET_ADMIN --mount "$VOLUME" \
+        # --restart-condition=none --network "$NETWORK" \
+        # --env-file="$IPFS_ENV_FILE" ipfs-default
 }
 
 function new-exp(){
@@ -76,15 +83,17 @@ function new-exp(){
 
     log "Launching ipfs-normal replicas..."
     docker service create --name ipfs-normal --replicas $half_nodes \
-        --cap-add=NET_ADMIN --mount "$VOLUME" \
-        --restart-condition=none --network "$NETWORK" \
-        --env-file="$IPFS_ENV_FILE" ipfs-normal
+        $COMMON_SERV_CFG ipfs-normal
+        # --cap-add=NET_ADMIN --mount "$VOLUME" \
+        # --restart-condition=none --network "$NETWORK" \
+        # --env-file="$IPFS_ENV_FILE" ipfs-normal
 
     log "Launching ipfs-secure replicas..."
     docker service create --name ipfs-secure --replicas $half_nodes \
-        --cap-add=NET_ADMIN --mount "$VOLUME" \
-        --restart-condition=none --network "$NETWORK" \
-        --env-file="$IPFS_ENV_FILE" ipfs-secure
+        $COMMON_SERV_CFG ipfs-secure
+        # --cap-add=NET_ADMIN --mount "$VOLUME" \
+        # --restart-condition=none --network "$NETWORK" \
+        # --env-file="$IPFS_ENV_FILE" ipfs-secure
 }
 
 # run main function
@@ -124,8 +133,9 @@ function run-experiment(){
 
     log "Launching bootstraps..."
     docker service create --name boot-nodes  --replicas $EXP_BOOT_NODES \
-        --restart-condition=none  --env-file="$IPFS_ENV_FILE" \
-        --network "$NETWORK" --mount "$VOLUME" "$boot_image"
+        $COMMON_SERV_CFG "$boot_image"
+        # --restart-condition=none  --env-file="$IPFS_ENV_FILE" \
+        # --network "$NETWORK" --mount "$VOLUME" 
 
     log "Waiting 1 minutes and Building boot file..."
     # wait a bit and build boot-file

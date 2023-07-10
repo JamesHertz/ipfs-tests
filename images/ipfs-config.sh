@@ -15,4 +15,7 @@ function setup-ipfs-repo(){
     # reduce resource consuntion
     ipfs config Swarm.ConnMgr.LowWater --json 20
     ipfs config Swarm.ConnMgr.HighWater --json 50
+
+    # grade period
+    ipfs config Swarm.ConnMgr.GracePeriod 60s
 }
