@@ -57,7 +57,7 @@ function main(){
     log "Starting experiments..."
 
     # start daemon
-    ipfs daemon >> "$LOG_DIR/peers.log" 2>&1 &
+    GOLOG_FILE="$LOG_DIR/provide.log" ipfs daemon >> "$LOG_DIR/peers.log" 2>&1 &
 
     echo "{\"id\": \"$NODE_ID\", \"mode\": \"$MODE\"}" >> "$EXP_LOG_DIR/$NODE_ID.info"
 
