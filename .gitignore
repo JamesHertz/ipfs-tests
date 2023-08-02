@@ -4,3 +4,4 @@
 *.pdf
 *.csv
 __pycache__
+charts

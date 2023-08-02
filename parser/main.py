@@ -75,6 +75,7 @@ def parse_files(dirname : str) -> pd.DataFrame:
     cids_type  : dict[str, DhtType] = {}
     data  = []
 
+    # TODO: add loading bar :)
     # loads each node info (which is made of <node-id> and <dht-type> )
     nodes_info = glob.glob('{}/*.info'.format(dirname))
     for info_file in nodes_info:
@@ -88,10 +89,12 @@ def parse_files(dirname : str) -> pd.DataFrame:
             for cid in cids:
                 cids_type[cid] = node.get_dht()
         except FileNotFoundError:
-            log.warning("Node %s failed during experiment, removing it...", peer_id)
+            # log.warning("Node %s failed during experiment, removing it...", peer_id)
             del nodes[peer_id]
 
     records_count = 0 
+
+    # TODO: add loading bar :)
     # loads all CID records
     for node in nodes.values():
         times = load_look_up_times(f'{dirname}/{node.get_pid()}-lookup-times.log')
@@ -103,7 +106,7 @@ def parse_files(dirname : str) -> pd.DataFrame:
 
             if c_type == None:
                 # TODO: think how to handle this
-                log.warn("Discaring record: %s", time_rec)
+                # log.warn("Discaring record: %s", time_rec)
                 assert providers == 0 
                 continue
 
@@ -117,14 +120,16 @@ def parse_files(dirname : str) -> pd.DataFrame:
     log.info("loaded: %d nodes, %d cids, %d look up records", len(nodes), len(cids_type), records_count)
     return pd.DataFrame(data, columns=[PID, PEER_DHT, CID, CID_TYPE, LOOKUP_TIME, PROVIDERS])
 
-def main(args):
-    if len(args) < 2:
-        print("Error: missing dirname.\nusage: main.py <dirname>")
-        sys.exit(1)
 
+# TODO: change this thing :)
+def parse_args(args : list[str]) -> list[str]:
+    return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i:02}' for i in range(6)]
+
+def main(args):
+    files = parse_args(args)
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
-    # TODO: merge all the files in one :)
-    res = parse_files(args[1])
+
+    res = pd.concat([parse_files(file) for file in files], ignore_index=True)
     res.set_index(PID).to_csv('data.csv')
 
 
