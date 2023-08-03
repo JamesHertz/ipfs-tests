@@ -11,7 +11,7 @@ import re
 
 from utils import *
 from typing import TypedDict
-from collections.abc import Generator
+from collections.abc import Iterator
 
 # snapshots regular expression
 SNAPSHOTS_RE = re.compile('xxx-start-xxx([^"]+?)xxx-end-xxx')
@@ -26,7 +26,7 @@ class LookupRecord (TypedDict):
     providers : list[str]
 
 class NodeInfo(TypedDict):
-    pid  : str
+    id  : str
     mode : str
 
 class DhtType(Enum):
@@ -34,6 +34,7 @@ class DhtType(Enum):
     NORMAL  = 1
     DEFAULT = 2
 
+    @staticmethod
     def parse_from(value):
         if value == 'secure':
             return DhtType.SECURE
@@ -62,7 +63,7 @@ def load_node_info(filename : str) -> NodeInfo:
     with open(filename) as file:
         return json.loads(file.read())
 
-def load_snapshots(filename : str) -> Generator[Snapshot]:
+def load_snapshots(filename : str) -> Iterator[Snapshot]:
     with open(filename) as file:
         data = file.read()
         for snap_data in SNAPSHOTS_RE.finditer(data):
@@ -118,8 +119,6 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
             failed_nodes.add(peer_id)
             del nodes[peer_id]
 
-    records_count = 0 
-
     # list of (pid, peer_dht, cid, cid_type, lookup_time, provider)
     data = []
 
@@ -144,7 +143,6 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
                 (node.get_pid(), node.get_dht().name, cid,
                     c_type.name, lookup_time, providers)
             )
-            records_count += 1
         
     # list of (src_peer, src_dht, dst_peer, dst_dht,  snapshot_nr,  bucket_nr)
     snapshots = []
@@ -168,10 +166,10 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
     # TODO: add info about lookups
-    log.info("loaded: %d nodes, %d cids, %d look up records", len(nodes), len(cids_type), records_count)
+    log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records", len(nodes), len(cids_type), len(data), len(snapshots))
     return pd.DataFrame(data, 
             columns=[PID, PEER_DHT, CID, CID_TYPE, LOOKUP_TIME, PROVIDERS]), pd.DataFrame(snapshots,
-                columns=[SRC_PID, SRC_PID, DST_PID, DST_DHT, SNAPSHOT_NR, BUCKET_NR]
+                columns=[SRC_PID, SRC_DHT, DST_PID, DST_DHT, SNAPSHOT_NR, BUCKET_NR]
             )
 
 
@@ -194,6 +192,7 @@ def main(args):
         lookups, 
         ignore_index=True
     ).set_index(PID).to_csv('lookups.csv')
+
 
     pd.concat(
         snapshots, 

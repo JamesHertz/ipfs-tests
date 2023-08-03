@@ -63,6 +63,7 @@ def plot_success_rate(data : pd.DataFrame):
 
 def plot_cids_lookups(data : pd.DataFrame):
     # TODO: think if it's worthed to set constants
+    # TODO: think on a way to solve the colors incovinience
     data = data.groupby(hd.PEER_DHT)[hd.CID_TYPE].value_counts().to_frame()
     data.reset_index(level=(hd.CID_TYPE,), inplace=True)
 
@@ -112,7 +113,7 @@ RENAMES = [
 
 
 def read_data() -> pd.DataFrame:
-    data = pd.read_csv("data.csv")
+    data = pd.read_csv("lookups.csv")
 
     # some verfications
     assert len(data[ 
