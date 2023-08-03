@@ -26,10 +26,10 @@ def plot_avg_success_resolve(data : pd.DataFrame):
     
     plt.xticks(rotation=0, horizontalalignment="center")
     plt.ylabel('time (ms)', fontweight='bold')
-    plt.title('Successful Average Result time (ms)', fontweight='bold')
+    plt.title('Average Successful Resolve time (ms)', fontweight='bold')
 
     # plt.show()
-    save_fig('avg-result.pdf')
+    save_fig('avg-resolve.pdf')
 
 
 def plot_success_rate(data : pd.DataFrame):
@@ -61,7 +61,7 @@ def plot_success_rate(data : pd.DataFrame):
     # plt.show()
     save_fig('success-rate.pdf')
 
-def plot_resolved_cids(data : pd.DataFrame):
+def plot_cids_lookups(data : pd.DataFrame):
     # TODO: think if it's worthed to set constants
     data = data.groupby(hd.PEER_DHT)[hd.CID_TYPE].value_counts().to_frame()
     data.reset_index(level=(hd.CID_TYPE,), inplace=True)
@@ -97,10 +97,10 @@ def plot_resolved_cids(data : pd.DataFrame):
     plt.xticks(rotation=0, horizontalalignment="center")
     plt.ylabel('Number of CIDs lookups', fontweight='bold')
     plt.xlabel('DHT Types', fontweight='bold')
-    plt.title('Number of CIDs lookups by DHT type and CID type', fontweight='bold')
+    plt.title('Number of CIDs lookups by DHT and CID type', fontweight='bold')
 
     # plt.show()
-    save_fig('cid-hist.pdf')
+    save_fig('lookup-hist.pdf')
 
 # change some values so as to have better 
 # naming in the charts
@@ -135,7 +135,7 @@ def main():
 
     plot_avg_success_resolve(data)
     plot_success_rate(data)
-    plot_resolved_cids(data)
+    plot_cids_lookups(data)
 
 
 if __name__ == '__main__':
