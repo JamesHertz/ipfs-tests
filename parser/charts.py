@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import utils as hd
 
-COLORS = ['C9', 'C2', 'C1']
+COLORS = ['C10', 'C9', 'C1', 'C2']
 
 def save_fig(filename):
     # TODO: check if directory charts exists, if not created it :)
@@ -12,7 +12,6 @@ def save_fig(filename):
     plt.clf() # clear drawn charts for others :)
 
 def plot_avg_success_resolve(data : pd.DataFrame):
-
     filtered = data[ data[hd.PROVIDERS] > 0 ]
     ax = filtered.groupby(hd.PEER_DHT)[hd.LOOKUP_TIME].mean().plot(
         kind='bar',
@@ -70,15 +69,29 @@ RENAMES = [
     ('NORMAL', 'Normal')
 ]
 
-# Read the CSV file
-def main():
-    data = pd.read_csv("data.csv")
-    for old, new in RENAMES:
-        data.replace(old, new, inplace=True)
 
+def read_data() -> pd.DataFrame:
+    data = pd.read_csv("data.csv")
+
+    # some verfications
     assert len(data[ 
         (data[hd.PEER_DHT] != data[hd.CID_TYPE]) & (data[hd.PROVIDERS] > 0)
     ]) == 0, "something is VERY WRONG"
+
+
+    aux = data[ data[hd.PEER_DHT].isin(['SECURE', 'NORMAL']) ].copy()
+    aux[hd.PEER_DHT] = 'All'
+    aux[hd.CID_TYPE] = 'All'
+
+    return pd.concat([aux, data], ignore_index=True)
+
+def main():
+    # data = pd.read_csv("data.csv")
+    # TODO: change the order to Baseline, Normal, Secure, All
+    data = read_data()
+    for old, new in RENAMES:
+        data.replace(old, new, inplace=True)
+
     plot_avg_success_resolve(data)
     plot_success_rate(data)
 
