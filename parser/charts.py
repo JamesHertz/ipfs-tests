@@ -4,9 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import utils as hd
 
-COLORS = ['C10', 'C9', 'C1', 'C2']
+BARS_COLORS = ['C10', 'C9', 'C1', 'C2']
 
-def save_fig(filename):
+def save_fig(filename : str):
     # TODO: check if directory charts exists, if not created it :)
     plt.savefig(f'charts/{filename}')
     plt.clf() # clear drawn charts for others :)
@@ -16,7 +16,7 @@ def plot_avg_success_resolve(data : pd.DataFrame):
     ax = filtered.groupby(hd.PEER_DHT)[hd.LOOKUP_TIME].mean().plot(
         kind='bar',
         figsize=(12,8),
-        color=COLORS,
+        color=BARS_COLORS,
         xlabel='',
     )
 
@@ -44,7 +44,7 @@ def plot_success_rate(data : pd.DataFrame):
     ax = aux['srante'].plot(
         kind='bar',
         figsize=(12,8),
-        color=COLORS,
+        color=BARS_COLORS,
         xlabel='',
     )
 
@@ -83,7 +83,7 @@ def read_data() -> pd.DataFrame:
     aux[hd.PEER_DHT] = 'All'
     aux[hd.CID_TYPE] = 'All'
 
-    return pd.concat([aux, data], ignore_index=True)
+    return pd.concat([data, aux], ignore_index=True)
 
 def main():
     # data = pd.read_csv("data.csv")
