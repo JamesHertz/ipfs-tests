@@ -61,6 +61,47 @@ def plot_success_rate(data : pd.DataFrame):
     # plt.show()
     save_fig('success-rate.pdf')
 
+def plot_resolved_cids(data : pd.DataFrame):
+    # TODO: think if it's worthed to set constants
+    data = data.groupby(hd.PEER_DHT)[hd.CID_TYPE].value_counts().to_frame()
+    data.reset_index(level=(hd.CID_TYPE,), inplace=True)
+
+    pivot_data = data.pivot(columns=hd.CID_TYPE, values='count').fillna(0)
+
+    __before = pivot_data['Normal']
+
+    pivot_data['Normal'] = pivot_data['Secure'] + pivot_data['Normal']
+
+    ax = None
+    for col, color in zip(pivot_data, BARS_COLORS):
+        tmp = pivot_data.plot(
+            kind='bar', 
+            color=color,
+            figsize=(12,8),
+            y=col,
+            ax=ax
+        ) 
+        if ax is None:
+            ax = tmp
+
+    # fix what I did :)
+    pivot_data['Normal'] =  pivot_data['Normal'] - pivot_data['Secure']
+
+    assert (__before == pivot_data['Normal']).all(), 'Normal data not properly restored'
+
+    for cont, col in zip(ax.containers, pivot_data):
+        ax.bar_label(cont, labels=['{:,}'.format(int(x)) if x != 0.0 else '' for x in pivot_data[col]])
+    
+
+    ax.legend(title='CID types')
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.ylabel('Number of CIDs lookups', fontweight='bold')
+    plt.xlabel('DHT Types', fontweight='bold')
+    plt.title('Number of CIDs lookups by DHT type and CID type', fontweight='bold')
+
+    # plt.show()
+    save_fig('cid-hist.pdf')
+
 # change some values so as to have better 
 # naming in the charts
 RENAMES = [
@@ -94,6 +135,7 @@ def main():
 
     plot_avg_success_resolve(data)
     plot_success_rate(data)
+    plot_resolved_cids(data)
 
 
 if __name__ == '__main__':
