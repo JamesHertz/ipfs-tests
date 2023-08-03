@@ -7,9 +7,18 @@ import json
 import logging as log
 import pandas as pd
 import os
+import re
 
 from utils import *
 from typing import TypedDict
+from collections.abc import Generator
+
+# snapshots regular expression
+SNAPSHOTS_RE = re.compile('xxx-start-xxx([^"]+?)xxx-end-xxx')
+
+# bucket number and peers_id
+Bucket   = list[str]
+Snapshot = list[Bucket]
 
 class LookupRecord (TypedDict):
     cid       : str
@@ -53,6 +62,21 @@ def load_node_info(filename : str) -> NodeInfo:
     with open(filename) as file:
         return json.loads(file.read())
 
+def load_snapshots(filename : str) -> Generator[Snapshot]:
+    with open(filename) as file:
+        data = file.read()
+        for snap_data in SNAPSHOTS_RE.finditer(data):
+            snapshot = []
+            info = snap_data.group(1)
+            for bucket in info.split('bucket:')[1:]:
+                lines = bucket.strip().splitlines()
+                snapshot.append([
+                    # lines[0] is the bucket number :)
+                    line.split(' ', maxsplit=2)[1] for line in lines[1:]
+                ])
+            yield snapshot
+
+
 class Node:
     def __init__(self, pid : str, dht_type : DhtType):
         self.pid = pid
@@ -64,7 +88,8 @@ class Node:
     def get_dht(self) -> DhtType:
         return self.dht_type
 
-def parse_files(dirname : str) -> pd.DataFrame:
+# look-ups, snapshots
+def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not os.path.isdir(dirname):
         log.fatal("Error: path %s doesn't exists" % (dirname,))
         sys.exit(1)
@@ -73,7 +98,7 @@ def parse_files(dirname : str) -> pd.DataFrame:
 
     nodes      : dict[str, Node]    = {}
     cids_type  : dict[str, DhtType] = {}
-    data  = []
+    failed_nodes : set[str] = set()
 
     # TODO: add loading bar :)
     # loads each node info (which is made of <node-id> and <dht-type> )
@@ -90,9 +115,13 @@ def parse_files(dirname : str) -> pd.DataFrame:
                 cids_type[cid] = node.get_dht()
         except FileNotFoundError:
             # log.warning("Node %s failed during experiment, removing it...", peer_id)
+            failed_nodes.add(peer_id)
             del nodes[peer_id]
 
     records_count = 0 
+
+    # list of (pid, peer_dht, cid, cid_type, lookup_time, provider)
+    data = []
 
     # TODO: add loading bar :)
     # loads all CID records
@@ -116,21 +145,60 @@ def parse_files(dirname : str) -> pd.DataFrame:
                     c_type.name, lookup_time, providers)
             )
             records_count += 1
+        
+    # list of (src_peer, src_dht, dst_peer, dst_dht,  snapshot_nr,  bucket_nr)
+    snapshots = []
+    for node in nodes.values():
+        filename = f'{dirname}/{node.get_pid()}-peers.log'
+        for snap_nr , snapshot in enumerate(load_snapshots(filename)):
+            for bucket_nr, bucket in enumerate(snapshot):
+                for dst_pid in bucket:
 
+                    # TODO: I wonder why?
+                    if dst_pid in failed_nodes: continue
+                    # assert (dst_pid not in failed_nodes)
+
+                    dst_node = nodes.get(dst_pid)
+                    dst_dht = 'Bootstrap' if dst_node is None else nodes[dst_pid].get_dht().name
+                    src_dht = node.get_dht()
+
+                    snapshots.append(
+                        (node.get_pid(), src_dht.name,  dst_pid, dst_dht, snap_nr, bucket_nr)
+                    )
+
+
+    # TODO: add info about lookups
     log.info("loaded: %d nodes, %d cids, %d look up records", len(nodes), len(cids_type), records_count)
-    return pd.DataFrame(data, columns=[PID, PEER_DHT, CID, CID_TYPE, LOOKUP_TIME, PROVIDERS])
+    return pd.DataFrame(data, 
+            columns=[PID, PEER_DHT, CID, CID_TYPE, LOOKUP_TIME, PROVIDERS]), pd.DataFrame(snapshots,
+                columns=[SRC_PID, SRC_PID, DST_PID, DST_DHT, SNAPSHOT_NR, BUCKET_NR]
+            )
 
 
 # TODO: change this thing :)
 def parse_args(args : list[str]) -> list[str]:
     return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i:02}' for i in range(6)]
+    # return ['../logs/ipfs-logs-04']
 
 def main(args):
-    files = parse_args(args)
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
 
-    res = pd.concat([parse_files(file) for file in files], ignore_index=True)
-    res.set_index(PID).to_csv('data.csv')
+    lookups   = []
+    snapshots = []
+    for experiment in parse_args(args):
+        lkups, snap = parse_files(experiment)
+        lookups.append(lkups)
+        snapshots.append(snap)
+
+    pd.concat(
+        lookups, 
+        ignore_index=True
+    ).set_index(PID).to_csv('lookups.csv')
+
+    pd.concat(
+        snapshots, 
+        ignore_index=True
+    ).set_index(SRC_PID).to_csv('snapshots.csv')
 
 
 
