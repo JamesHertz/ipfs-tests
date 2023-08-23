@@ -9,7 +9,10 @@ import pandas as pd
 import os
 import re
 
-from utils import *
+from utils import Headers as hd
+from utils import Lookups as lk
+from utils import Snapshots as sp 
+
 from typing import TypedDict
 from collections.abc import Iterator
 
@@ -168,37 +171,41 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
     # TODO: add info about lookups
     log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records", len(nodes), len(cids_type), len(data), len(snapshots))
     return pd.DataFrame(data, 
-            columns=[PID, PEER_DHT, CID, CID_TYPE, LOOKUP_TIME, PROVIDERS]), pd.DataFrame(snapshots,
-                columns=[SRC_PID, SRC_DHT, DST_PID, DST_DHT, SNAPSHOT_NR, BUCKET_NR]
+            columns=[lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS]), pd.DataFrame(snapshots,
+                columns=[sp.SRC_PID, sp.SRC_DHT, sp.DST_PID, sp.DST_DHT, sp.SNAPSHOT_NR, sp.BUCKET_NR]
             )
 
 
 # TODO: change this thing :)
 def parse_args(args : list[str]) -> list[str]:
     return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i:02}' for i in range(6)]
-    # return ['../logs/ipfs-logs-04']
 
-def main(args):
+def main(args : list[str]):
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
 
     lookups   = []
     snapshots = []
-    for experiment in parse_args(args):
+    for exp_id, experiment in enumerate(parse_args(args)):
         lkups, snap = parse_files(experiment)
+
+        # set up experiment ids
+        lkups[hd.EXP_ID] = exp_id 
+        snap[hd.EXP_ID]  = exp_id
+
+        # ...
         lookups.append(lkups)
         snapshots.append(snap)
 
     pd.concat(
         lookups, 
         ignore_index=True
-    ).set_index(PID).to_csv('lookups.csv')
+    ).set_index(lk.PID).to_csv('lookups.csv')
 
 
     pd.concat(
         snapshots, 
         ignore_index=True
-    ).set_index(SRC_PID).to_csv('snapshots.csv')
-
+    ).set_index(sp.SRC_PID).to_csv('snapshots.csv')
 
 
 if __name__ == '__main__':
