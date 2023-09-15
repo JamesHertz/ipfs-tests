@@ -66,20 +66,33 @@ def plot_success_rate(data: pd.DataFrame):
     save_fig('success-rate.pdf')
 
 
+# turn this into an average per node :) 
 def plot_cids_lookups(data: pd.DataFrame):
     # TODO: think if it's worthed to set constants
     # TODO: think on a way to solve the colors incovinience
+    data = data[ data[lk.PEER_DHT] != 'All' ]
+    # total_resolves = len(data)
+    # print(total_resolves)
+    print('-----------------------')
+    print(data)
     data = data.groupby(lk.PEER_DHT)[lk.CID_TYPE].value_counts().to_frame()
+    print('-----------------------')
+    print(data)
     data.reset_index(level=(lk.CID_TYPE,), inplace=True)
 
     pivot_data = data.pivot(columns=lk.CID_TYPE, values='count').fillna(0)
+    # print(pivot_data)
+    # for col in pivot_data:
+    #     pivot_data[col] = (100 * pivot_data[col] / total_resolves) 
 
+    print('-----------------------')
+    print(pivot_data)
     __before = pivot_data['Normal']
 
     pivot_data['Normal'] = pivot_data['Secure'] + pivot_data['Normal']
 
     ax = None
-    for col, color in zip(pivot_data, BARS_COLORS):
+    for col, color in zip(pivot_data, BARS_COLORS[1:]):
         tmp = pivot_data.plot(
             kind='bar',
             color=color,
@@ -99,6 +112,7 @@ def plot_cids_lookups(data: pd.DataFrame):
     for cont, col in zip(ax.containers, pivot_data):
         ax.bar_label(cont, labels=['{:,}'.format(
             int(x)) if x != 0.0 else '' for x in pivot_data[col]])
+            # round(x, 2)) if x != 0.0 else '' for x in pivot_data[col]])
 
     ax.legend(title='CID types')
     plt.xticks(rotation=0, horizontalalignment="center")
@@ -107,7 +121,11 @@ def plot_cids_lookups(data: pd.DataFrame):
     plt.title('Number of CIDs lookups by DHT and CID type', fontweight='bold')
 
     # plt.show()
-    save_fig('lookup-hist.pdf')
+    # save_fig('lookup-hist.pdf')
+
+
+def plot_xxx(data: pd.DataFrame):
+    pass
 
 def read_data(filename : str) -> pd.DataFrame:
     data = pd.read_csv(filename)
@@ -117,9 +135,9 @@ def read_data(filename : str) -> pd.DataFrame:
     #     (data[lk.PEER_DHT] != data[lk.CID_TYPE]) & (data[lk.PROVIDERS] > 0)
     # ]) == 0, "something is VERY WRONG"
 
-    # aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
-    # aux[lk.PEER_DHT] = 'All'
-    # aux[lk.CID_TYPE] = 'All'
+    aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
+    aux[lk.PEER_DHT] = 'All'
+    aux[lk.CID_TYPE] = 'All'
 
     for old, new in [
         ('DEFAULT', 'Baseline'),
@@ -128,25 +146,64 @@ def read_data(filename : str) -> pd.DataFrame:
     ]:
         data.replace(old, new, inplace=True)
 
-    return data
-    # return pd.concat([data, aux], ignore_index=True)
+    # return data
+    return pd.concat([data, aux], ignore_index=True)
 
 
 def main():
     # data = read_data('lookups.csv')
+    # plot_xxx(data)
     # plot_avg_success_resolve(data)
     # plot_success_rate(data)
     # plot_cids_lookups(data)
-    data = read_data('snapshots.csv')
-    max_snapshot = data[lk.SNAPSHOT_NR].max()
-    print(data[
-        (data[lk.SNAPSHOT_NR] == max_snapshot) & (data[lk.BUCKET_NR] == 0)
-    ].groupby(lk.SRC_DHT)[lk.SNAPSHOT_NR].count() / 3)
 
+
+    # data = read_data('snapshots.csv')
+    # max_snapshot = data[lk.SNAPSHOT_NR].max()
+    # print(data[
+    #     (data[lk.SNAPSHOT_NR] == max_snapshot) & (data[lk.BUCKET_NR] == 0)
+    # ].groupby(lk.SRC_DHT)[lk.SNAPSHOT_NR].count() / 3)
+
+
+    # TODO: clean some rows
+    snapshots = pd.read_csv('snapshots.csv')
+
+    first_exp = snapshots[ (snapshots[sp.EXP_ID] == 0) & (snapshots[sp.BUCKET_NR] == 0) ]#.set_index([sp.SRC_PID, sp.SNAPSHOT_NR])
+
+    data = first_exp.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT])[sp.DST_DHT].value_counts().to_frame()
+    # data = first_exp.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT])[sp.DST_DHT].value_counts().to_frame()
+    print(data)
+    print('-------------------------')
+
+    data.reset_index(level=(sp.DST_DHT), inplace=True)
+    pivot_data = data.pivot(columns=sp.DST_DHT, values='count').fillna(0)
+    print(pivot_data)
+
+    # hi copilot now I have 3 columns, a b and c. I want to change the value of each to the percentage of the sum of the three columns.
+    # the frame is saved in pivot_data
+    # thank you that worked just fine :)
+    pivot_data = pivot_data.apply(lambda x: round(x / x.sum() * 100, 2), axis=1)
+    pivot_data.reset_index(inplace=True)
+
+    print('-------------------------')
+    print(pivot_data)
+
+    secure_nodes = pivot_data[ pivot_data[sp.SRC_DHT] == 'SECURE'].copy()
+    # Hi copioot, I have 5 collumns a, b, c, d, e. I want to group by a and calculate the mean of b, c and d.
+    # I want to drop the collumn e since I don't need it.
+    # the frame is saved in secure_nodes
+    # thank you that worked just fine :)
+    print('-------------------------')
+    print(secure_nodes)
+    secure_nodes.drop(columns=[sp.SRC_DHT, sp.SRC_PID], inplace=True)
+    secure_nodes = secure_nodes.groupby(sp.SNAPSHOT_NR).mean()
+    print('-------------------------')
+    print(secure_nodes)
+
+
+# TODO: charts by bucket and by experiment
 # charts ideas:
 #  - avg number of cid resolution by experiment
 #  - evolution of routing table peers overall and them by bucket
-# TODO: add experiment ID to every chart :)
-
 if __name__ == '__main__':
     main()
