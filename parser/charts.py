@@ -123,9 +123,82 @@ def plot_cids_lookups(data: pd.DataFrame):
     # plt.show()
     # save_fig('lookup-hist.pdf')
 
+def calc_rt_evolution(snapshots: pd.DataFrame) -> pd.DataFrame:
+    data = snapshots.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT, sp.EXP_ID])[sp.DST_DHT].value_counts().to_frame()
+    # print(data)
 
-def plot_xxx(data: pd.DataFrame):
-    pass
+    # Some nodes dies during the experiment, for motives I have no control of # those that die right at 
+    # the begining of the experiment are remove from the data when generating the csv but those that die 
+    # during hte experiment are not so I ran this to notice how many did so. (in order to see if their 
+    # data would statistically ruin the results). 
+    #
+    # +-----------------------------------------------------------+
+    # | The results I got were (format: exp-id => died/didn't):   |
+    # |   - 0 => 1/599                                            |
+    # |   - 1 => 1/600                                            |
+    # |   - 2 => 1/597                                            |
+    # +-----------------------------------------------------------+
+    #
+    # max_snap = snapshots[sp.SNAPSHOT_NR].max()
+    # for exp_id in range(3):
+    #     filtered = snapshots[ snapshots[sp.EXP_ID] == exp_id ]
+    #     aux = filtered.groupby(sp.SRC_PID)[sp.SNAPSHOT_NR].max().to_frame()
+    #     print(aux.columns)
+    #     print(f'exp: {exp_id}; mad-node/total-nodes: {len(aux[aux[sp.SNAPSHOT_NR] != max_snap])}/{len(aux)}')
+
+    # get each type as a row
+    data.reset_index(level=(sp.DST_DHT), inplace=True)
+    pivot_data = data.pivot(columns=sp.DST_DHT, values='count').fillna(0)
+    # print(pivot_data)
+
+    # turn each row number as  (axis=1 stands for apply to each row)
+    pivot_data = pivot_data.apply(lambda x: round(x / x.sum() * 100, 2), axis=1)
+    pivot_data.reset_index(inplace=True)
+    
+    pivot_data.drop(columns=[sp.SRC_DHT, sp.SRC_PID, sp.EXP_ID], inplace=True)
+    pivot_data = pivot_data.groupby(sp.SNAPSHOT_NR).mean()
+    # print(pivot_data)
+
+    for dht_type in pivot_data.columns:
+        aux = pivot_data[dht_type]
+        if len(aux) > 0 :
+            plt.plot(pivot_data.index, aux, label=dht_type)
+
+    return pivot_data
+
+
+def plot_rt_evolution(snapshots: pd.DataFrame):
+
+    def build_chart(data : pd.DataFrame, title: str, xlabel : str, ylabel : str):
+        plt.ylim(0, 100)
+        plt.xlim(0, data.index.max()) # 0 to max snapshot-number
+        plt.legend()
+
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+
+    for node_type in ['Secure', 'Normal']:
+        snaps    = snapshots[snapshots[sp.SRC_DHT] == node_type]
+        dht_evol = calc_rt_evolution(snaps)
+        build_chart(
+            dht_evol,
+            f'Evolution of the routing table of {node_type} Nodes',
+            'Time (minutes) from the start of the experiment',
+            'Percentage (%) of nodes in the routing table'
+        )
+        save_fig(f'{node_type}-rt-evol.pdf')
+
+        for bucket in snaps[sp.BUCKET_NR].unique():
+            build_chart(
+                calc_rt_evolution(snaps[ snaps[sp.BUCKET_NR] == bucket ]),
+                f'Evolution of the bucket {bucket} of {node_type} Nodes',
+                'Time (minutes) from the start of the experiment',
+                'Percentage (%) of nodes in the bucket'
+            )
+
+            save_fig(f'{node_type}-rt-evol-bucket-{bucket}.pdf')
+
 
 def read_data(filename : str) -> pd.DataFrame:
     data = pd.read_csv(filename)
@@ -135,9 +208,10 @@ def read_data(filename : str) -> pd.DataFrame:
     #     (data[lk.PEER_DHT] != data[lk.CID_TYPE]) & (data[lk.PROVIDERS] > 0)
     # ]) == 0, "something is VERY WRONG"
 
-    aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
-    aux[lk.PEER_DHT] = 'All'
-    aux[lk.CID_TYPE] = 'All'
+    # NOTE: Akos said is not relevant at all having all here
+    # aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
+    # aux[lk.PEER_DHT] = 'All'
+    # aux[lk.CID_TYPE] = 'All'
 
     for old, new in [
         ('DEFAULT', 'Baseline'),
@@ -146,64 +220,24 @@ def read_data(filename : str) -> pd.DataFrame:
     ]:
         data.replace(old, new, inplace=True)
 
-    # return data
-    return pd.concat([data, aux], ignore_index=True)
+    return data
+    #return pd.concat([data, aux], ignore_index=True)
 
 
 def main():
-    # data = read_data('lookups.csv')
-    # plot_xxx(data)
-    # plot_avg_success_resolve(data)
-    # plot_success_rate(data)
-    # plot_cids_lookups(data)
+    data = read_data('lookups.csv')
+    plot_avg_success_resolve(data)
+    plot_success_rate(data)
+    plot_cids_lookups(data)
 
-
-    # data = read_data('snapshots.csv')
-    # max_snapshot = data[lk.SNAPSHOT_NR].max()
-    # print(data[
-    #     (data[lk.SNAPSHOT_NR] == max_snapshot) & (data[lk.BUCKET_NR] == 0)
-    # ].groupby(lk.SRC_DHT)[lk.SNAPSHOT_NR].count() / 3)
-
-
-    # TODO: clean some rows
-    snapshots = pd.read_csv('snapshots.csv')
-
-    first_exp = snapshots[ (snapshots[sp.EXP_ID] == 0) & (snapshots[sp.BUCKET_NR] == 0) ]#.set_index([sp.SRC_PID, sp.SNAPSHOT_NR])
-
-    data = first_exp.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT])[sp.DST_DHT].value_counts().to_frame()
-    # data = first_exp.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT])[sp.DST_DHT].value_counts().to_frame()
-    print(data)
-    print('-------------------------')
-
-    data.reset_index(level=(sp.DST_DHT), inplace=True)
-    pivot_data = data.pivot(columns=sp.DST_DHT, values='count').fillna(0)
-    print(pivot_data)
-
-    # hi copilot now I have 3 columns, a b and c. I want to change the value of each to the percentage of the sum of the three columns.
-    # the frame is saved in pivot_data
-    # thank you that worked just fine :)
-    pivot_data = pivot_data.apply(lambda x: round(x / x.sum() * 100, 2), axis=1)
-    pivot_data.reset_index(inplace=True)
-
-    print('-------------------------')
-    print(pivot_data)
-
-    secure_nodes = pivot_data[ pivot_data[sp.SRC_DHT] == 'SECURE'].copy()
-    # Hi copioot, I have 5 collumns a, b, c, d, e. I want to group by a and calculate the mean of b, c and d.
-    # I want to drop the collumn e since I don't need it.
-    # the frame is saved in secure_nodes
-    # thank you that worked just fine :)
-    print('-------------------------')
-    print(secure_nodes)
-    secure_nodes.drop(columns=[sp.SRC_DHT, sp.SRC_PID], inplace=True)
-    secure_nodes = secure_nodes.groupby(sp.SNAPSHOT_NR).mean()
-    print('-------------------------')
-    print(secure_nodes)
+    snapshots = read_data('snapshots.csv')
+    plot_rt_evolution(snapshots)
 
 
 # TODO: charts by bucket and by experiment
 # charts ideas:
 #  - avg number of cid resolution by experiment
-#  - evolution of routing table peers overall and them by bucket
+#  - experiment to check why normal nodes are more frequent than secure
+#  x evolution of routing table peers overall and them by bucket 
 if __name__ == '__main__':
     main()
