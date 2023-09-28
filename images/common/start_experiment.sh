@@ -18,16 +18,19 @@ function save_logs(){
 
 function calc_seq_num(){
     local total=$((REPLICA_ID-1))
-    case $MODE in
-        default)
-        ;;
-        normal)
-            total=$((2*total))
-        ;;
-        secure)
-            total=$((2*total+1))
-        ;;
-    esac
+    if [ "$MODE" = "secure" ] ; then
+        total=$((total+EXP_TOTAL_NODES/2))
+    fi
+    # case $MODE in
+    #     default)
+    #     ;;
+    #     normal)
+    #         total=$((2*total))
+    #     ;;
+    #     secure)
+    #         total=$((2*total+1))
+    #     ;;
+    # esac
 
     echo $total
 }
