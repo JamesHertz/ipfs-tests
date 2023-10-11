@@ -70,7 +70,8 @@ function main(){
     log "Killing daemon..."
 
     # kills ipfs daemon proccess
-    kill $(ps | grep ipfs | awk '{print $1}')
+    # kill $(ps | grep ipfs | awk '{print $1}')
+    ipfs shutdown # tururu :)
 
     save_logs
 }

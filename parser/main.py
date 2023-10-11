@@ -28,6 +28,10 @@ class LookupRecord (TypedDict):
     time_ms   : float
     providers : list[str]
 
+class CidInfo(TypedDict):
+    Content : str
+    CidType : int
+
 class NodeInfo(TypedDict):
     id  : str
     mode : str
@@ -51,15 +55,19 @@ class DhtType(Enum):
 def load_cids(filename : str) -> list[str]:
     with open(filename) as file:
         data = file.read()
-        aux  = data.split(maxsplit=2)
-        return json.loads(aux[-1])
+        infos : list[CidInfo]= json.loads( data.split(maxsplit=2)[-1] )
+        return [ info['Content'] for info in infos ] #json.loads(aux[-1]) ]
 
 def load_look_up_times(filename : str) -> list[LookupRecord]: #list[dict[str, str]]:
     times = []
     with open(filename) as file:
         for line in file.readlines():
-            aux  = line.split(maxsplit=2)
-            times.append(json.loads(aux[-1]))
+            aux  = line.split(maxsplit=2)[-1]
+            # print(aux)
+            # print(aux.startswith('resolving'))
+            # TODO: solve this later
+            if aux.startswith('resolving'): continue
+            times.append(json.loads(aux))
         return times
 
 def load_node_info(filename : str) -> NodeInfo:
@@ -178,7 +186,8 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 # TODO: change this thing :)
 def parse_args(args : list[str]) -> list[str]:
-    return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i:02}' for i in range(6)]
+    return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
+    # return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(4) ]
 
 def main(args : list[str]):
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")

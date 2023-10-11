@@ -39,31 +39,41 @@ def plot_avg_success_resolve(data: pd.DataFrame):
 
 def plot_success_rate(data: pd.DataFrame):
 
-    aux = data[
-        data[lk.PEER_DHT] == data[lk.CID_TYPE]
-    ].groupby(lk.PEER_DHT)[lk.PROVIDERS].aggregate(
+    data = data.groupby([lk.PEER_DHT, lk.CID_TYPE])[lk.PROVIDERS].aggregate(
         ['sum', 'count']
     )
+    data.reset_index(level=(lk.CID_TYPE,), inplace=True)
 
-    aux['srante'] = aux['sum'] / aux['count'] * 100
-    ax = aux['srante'].plot(
-        kind='bar',
-        figsize=(12, 8),
-        color=BARS_COLORS,
-        xlabel='',
-    )
+    data['success rate'] = data['sum'] / data['count'] * 100
 
-    # FIXME: better understand this thing
-    cnt = ax.containers[0]
-    ax.bar_label(cnt, labels=[f"{round(v, 2)}%" for v in cnt.datavalues])
+    pivot_data = data.pivot(columns=lk.CID_TYPE, values='success rate').fillna(0)
 
+    ax = pivot_data.plot(kind='bar')
+    print(pivot_data)
+
+    for cnt in ax.containers:
+        ax.bar_label(cnt, labels=[f"{round(v, 2)} %" if v > 0.0 else '' for v in cnt.datavalues])
+
+    # aux['srante'] = aux['sum'] / aux['count'] * 100
+    # ax = aux['srante'].plot(
+    #     kind='bar',
+    #     figsize=(12, 8),
+    #     color=BARS_COLORS,
+    #     xlabel='',
+    # )
+
+    # # FIXME: better understand this thing
+    # cnt = ax.containers[0]
+    # ax.bar_label(cnt, labels=[f"{round(v, 2)}%" for v in cnt.datavalues])
+
+    # plt.xticks(rotation=0, horizontalalignment="center")
+    # plt.ylabel('success rate (%)', fontweight='bold')
+    # plt.title('Success rate of resolved CIDs', fontweight='bold')
+
+    # # Display the histogram
     plt.xticks(rotation=0, horizontalalignment="center")
-    plt.ylabel('success rate (%)', fontweight='bold')
-    plt.title('Success rate of resolved CIDs', fontweight='bold')
-
-    # Display the histogram
-    # plt.show()
-    save_fig('success-rate.pdf')
+    plt.show()
+    # save_fig('success-rate.pdf')
 
 
 # turn this into an average per node :) 
@@ -226,12 +236,12 @@ def read_data(filename : str) -> pd.DataFrame:
 
 def main():
     data = read_data('lookups.csv')
-    plot_avg_success_resolve(data)
+    # plot_avg_success_resolve(data)
     plot_success_rate(data)
-    plot_cids_lookups(data)
+    # plot_cids_lookups(data)
 
-    snapshots = read_data('snapshots.csv')
-    plot_rt_evolution(snapshots)
+    # snapshots = read_data('snapshots.csv')
+    # plot_rt_evolution(snapshots)
 
 
 # TODO: charts by bucket and by experiment

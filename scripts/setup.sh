@@ -13,6 +13,7 @@ Where the options are:
     --init        does --init-cids and --init-repos
     --init-repos  generates repos to be used on exeperiment
     --init-cids   generates a file with cids to be used in th experiment
+    --images      creates docker images in every host
     --experiment  creates a swarm and creates images in every hosts
     --swarm       creates a swarm for the experiment (uses oar)
     --help        displays the this message
