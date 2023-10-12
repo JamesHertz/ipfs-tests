@@ -7,3 +7,4 @@ __pycache__
 charts
 .vscode
 .DS_STORE
+/todo.md

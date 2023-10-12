@@ -100,9 +100,8 @@ function new-exp(){
 # run main function
 function run-experiment(){
     # TODO: 
-    #    x launch the boot nodes
-    #    x wait for them to finish and generate the EXP_BOOT_FILE
-    #    - run all the nodes and wait to the experiment to end (should I?)
+    #  - receive the number of times each experiment should be runned
+    #  - remove all logs before running the list of experiments
 
     local boot_image=
     local experiment=

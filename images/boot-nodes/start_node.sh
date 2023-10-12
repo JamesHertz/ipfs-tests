@@ -21,6 +21,8 @@ function main(){
     echo "SLEEPING for $wait_time seconds which are $((aux/60)) minutes"
     # wait till the end of the experiment
     sleep "$wait_time"
+
+    ipfs shutdown
 }
 
 main $*

@@ -9,6 +9,7 @@ class Lookups(Headers):
     CID_TYPE    = 'cid-type'
     LOOKUP_TIME = 'lookup-time (ms)'
     PROVIDERS   = 'providers-nr'
+    QUERIES     = 'queries-nr' # should I use query peers??
 
 class Snapshots(Headers):
     SRC_PID     = 'src-pid'

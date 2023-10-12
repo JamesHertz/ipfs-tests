@@ -26,11 +26,9 @@ Snapshot = list[Bucket]
 class LookupRecord (TypedDict):
     cid       : str
     time_ms   : float
+    type      : str
     providers : list[str]
-
-class CidInfo(TypedDict):
-    Content : str
-    CidType : int
+    queries   : list[str]
 
 class NodeInfo(TypedDict):
     id  : str
@@ -43,6 +41,7 @@ class DhtType(Enum):
 
     @staticmethod
     def parse_from(value):
+        value = value.lower()
         if value == 'secure':
             return DhtType.SECURE
         elif value == 'normal':
@@ -55,18 +54,14 @@ class DhtType(Enum):
 def load_cids(filename : str) -> list[str]:
     with open(filename) as file:
         data = file.read()
-        infos : list[CidInfo]= json.loads( data.split(maxsplit=2)[-1] )
-        return [ info['Content'] for info in infos ] #json.loads(aux[-1]) ]
+        return json.loads( data.split(maxsplit=2)[-1] )
+        # return [ info['Content'] for info in infos ] #json.loads(aux[-1]) ]
 
 def load_look_up_times(filename : str) -> list[LookupRecord]: #list[dict[str, str]]:
     times = []
     with open(filename) as file:
         for line in file.readlines():
             aux  = line.split(maxsplit=2)[-1]
-            # print(aux)
-            # print(aux.startswith('resolving'))
-            # TODO: solve this later
-            if aux.startswith('resolving'): continue
             times.append(json.loads(aux))
         return times
 
@@ -130,7 +125,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
             failed_nodes.add(peer_id)
             del nodes[peer_id]
 
-    # list of (pid, peer_dht, cid, cid_type, lookup_time, provider)
+    # list of (pid, peer_dht, cid, cid_type, lookup_time, providers, queries)
     data = []
 
     # TODO: add loading bar :)
@@ -142,19 +137,27 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
             lookup_time = time_rec['time_ms']
             providers   = len(time_rec['providers'])
             c_type      = cids_type.get(cid)
+            queries     = len(time_rec['queries'])
+            # cid_type    = time_rec['type']
 
             if c_type == None:
                 # TODO: think how to handle this
                 # log.warn("Discaring record: %s", time_rec)
                 assert providers == 0 
                 continue
+            elif c_type != DhtType.DEFAULT:
+                aux = time_rec['type']
+                assert aux == '' or c_type == DhtType.parse_from(aux), 'cid type mistaken'
 
             assert providers <= 1
             data.append(
                 (node.get_pid(), node.get_dht().name, cid,
-                    c_type.name, lookup_time, providers)
+                    c_type.name, lookup_time, providers, queries)
             )
         
+    # TODO: 
+    #  - add test that the provider is right and the type as well
+
     # list of (src_peer, src_dht, dst_peer, dst_dht,  snapshot_nr,  bucket_nr)
     snapshots = []
     for node in nodes.values():
@@ -179,15 +182,15 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
     # TODO: add info about lookups
     log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records", len(nodes), len(cids_type), len(data), len(snapshots))
     return pd.DataFrame(data, 
-            columns=[lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS]), pd.DataFrame(snapshots,
+            columns=[lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS, lk.QUERIES]), pd.DataFrame(snapshots,
                 columns=[sp.SRC_PID, sp.SRC_DHT, sp.DST_PID, sp.DST_DHT, sp.SNAPSHOT_NR, sp.BUCKET_NR]
             )
 
 
 # TODO: change this thing :)
 def parse_args(args : list[str]) -> list[str]:
-    return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
-    # return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(4) ]
+    # return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
+    return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(6) ]
 
 def main(args : list[str]):
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")

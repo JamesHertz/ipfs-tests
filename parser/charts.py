@@ -17,21 +17,36 @@ def save_fig(filename: str):
 
 
 def plot_avg_success_resolve(data: pd.DataFrame):
-    filtered = data[data[lk.PROVIDERS] > 0]
-    ax = filtered.groupby(lk.PEER_DHT)[lk.LOOKUP_TIME].mean().plot(
-        kind='bar',
-        figsize=(12, 8),
-        color=BARS_COLORS,
-        xlabel='',
+    data = data[data[lk.PROVIDERS] > 0]
+
+    data = data.groupby([lk.PEER_DHT, lk.CID_TYPE])[lk.LOOKUP_TIME].agg(resolve_time='mean')
+
+    print(data)
+    data.reset_index(level=(lk.CID_TYPE,), inplace=True)
+    pivot_data = data.pivot(columns=lk.CID_TYPE, values='resolve_time').fillna(0)
+
+    ax = pivot_data.plot(
+        kind='bar', color=BARS_COLORS[1:],
+        figsize=(14, 6),
     )
 
-    # FIXME: better understand this thing
-    cnt = ax.containers[0]
-    ax.bar_label(cnt, labels=[f"{round(v, 2)} ms" for v in cnt.datavalues])
+    for cnt in ax.containers:
+        ax.bar_label(cnt, labels=[f"{round(v, 2)} ms" if v > 0.0 else '' for v in cnt.datavalues])
+
+    # ax = filtered.groupby(lk.PEER_DHT)[lk.LOOKUP_TIME].mean().plot(
+    #     kind='bar',
+    #     figsize=(12, 8),
+    #     color=BARS_COLORS,
+    #     xlabel='',
+    # )
+
+    # # FIXME: better understand this thing
 
     plt.xticks(rotation=0, horizontalalignment="center")
+    plt.xlabel('DHT version', fontweight='bold')
     plt.ylabel('time (ms)', fontweight='bold')
-    plt.title('Average Successful Resolve time (ms)', fontweight='bold')
+    plt.title('Average Resolve time (ms)', fontweight='bold')
+    plt.legend(title='CID types')
 
     # plt.show()
     save_fig('avg-resolve.pdf')
@@ -48,7 +63,12 @@ def plot_success_rate(data: pd.DataFrame):
 
     pivot_data = data.pivot(columns=lk.CID_TYPE, values='success rate').fillna(0)
 
-    ax = pivot_data.plot(kind='bar')
+    ax = pivot_data.plot(
+        kind='bar',
+        figsize=(14, 6),
+        color=BARS_COLORS[:],
+    )
+
     print(pivot_data)
 
     for cnt in ax.containers:
@@ -66,14 +86,15 @@ def plot_success_rate(data: pd.DataFrame):
     # cnt = ax.containers[0]
     # ax.bar_label(cnt, labels=[f"{round(v, 2)}%" for v in cnt.datavalues])
 
-    # plt.xticks(rotation=0, horizontalalignment="center")
-    # plt.ylabel('success rate (%)', fontweight='bold')
-    # plt.title('Success rate of resolved CIDs', fontweight='bold')
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.xlabel('DHT version', fontweight='bold')
+    plt.ylabel('success rate (%)', fontweight='bold')
+    plt.title('Success rate of resolved CIDs', fontweight='bold')
+    plt.legend(title='CID types', loc='lower right')
 
     # # Display the histogram
-    plt.xticks(rotation=0, horizontalalignment="center")
-    plt.show()
-    # save_fig('success-rate.pdf')
+    # plt.show()
+    save_fig('success-rate.pdf')
 
 
 # turn this into an average per node :) 
@@ -197,7 +218,7 @@ def plot_rt_evolution(snapshots: pd.DataFrame):
             'Time (minutes) from the start of the experiment',
             'Percentage (%) of nodes in the routing table'
         )
-        save_fig(f'{node_type}-rt-evol.pdf')
+        save_fig(f'{node_type}-rt-end.pdf')
 
         for bucket in snaps[sp.BUCKET_NR].unique():
             build_chart(
@@ -208,6 +229,72 @@ def plot_rt_evolution(snapshots: pd.DataFrame):
             )
 
             save_fig(f'{node_type}-rt-evol-bucket-{bucket}.pdf')
+
+
+
+def calc_rt_state(snapshots: pd.DataFrame) -> pd.DataFrame:
+    data = snapshots.groupby([
+        sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT, sp.EXP_ID
+    ])[sp.DST_DHT].value_counts().to_frame('version-frequency')
+
+    data.reset_index(level=(sp.DST_DHT), inplace=True)
+
+    # get each type as a row turn each dht version type number into a row
+    pivot_data = data.pivot(columns=sp.DST_DHT, values='version-frequency').fillna(0)
+
+    # calculate the percentage of each freuqency
+    pivot_data = pivot_data.apply(lambda x: round(x / x.sum() * 100, 2), axis=1)
+    pivot_data.reset_index(inplace=True)
+    
+    # drop the collumns that doesn't matter more
+    pivot_data.drop(columns=[sp.SRC_PID, sp.EXP_ID, sp.SNAPSHOT_NR], inplace=True)
+
+    # get the average of each percentage by SRC_DHT
+    pivot_data = pivot_data.groupby(sp.SRC_DHT).mean()
+
+    
+    return pivot_data
+
+def plot_end_rt_state(snapshots: pd.DataFrame):
+    last_snap = snapshots[sp.SNAPSHOT_NR].unique().max()
+    snapshots = snapshots[ 
+          (snapshots[sp.SNAPSHOT_NR] == last_snap) 
+        & (snapshots[sp.SRC_DHT].isin(['Secure', 'Normal']))
+    ]
+
+    def built_chart(data: pd.DataFrame, title: str, filename: str):
+        ax = data.plot(
+            kind='bar',
+            figsize=(12, 6),
+            color=['C3', BARS_COLORS[2], BARS_COLORS[3]]
+        )
+
+        for cnt in ax.containers:
+            ax.bar_label(cnt, labels=[f"{round(v, 2)} %" if v > 0.0 else '' for v in cnt.datavalues])
+
+        plt.xticks(rotation=0, horizontalalignment="center")
+        plt.title(title, fontweight='bold')
+        # plt.title('Percentage of nodes of each DHT version known by each', fontweight='bold')
+        plt.xlabel('DHT version', fontweight='bold')
+        plt.ylabel('percentage of the nodes in DHT', fontweight='bold')
+        plt.legend(title='CID types')
+        save_fig(filename)
+
+    data = calc_rt_state(snapshots)
+    built_chart(data, 'Percentage of nodes neibours in the Routing table', 'rt-end-state.pdf')
+
+    for bucket in snapshots[sp.BUCKET_NR].unique():
+        aux = snapshots[snapshots[sp.BUCKET_NR] == bucket]
+        data = calc_rt_state(aux)
+        built_chart(
+            data, 
+            f'Percentage of nodes neibours in the bucket {bucket}', 
+            f'rt-end-state-bucket-{bucket}.pdf'
+        )
+
+
+
+
 
 
 def read_data(filename : str) -> pd.DataFrame:
@@ -236,12 +323,14 @@ def read_data(filename : str) -> pd.DataFrame:
 
 def main():
     data = read_data('lookups.csv')
-    # plot_avg_success_resolve(data)
+    plot_avg_success_resolve(data)
     plot_success_rate(data)
     # plot_cids_lookups(data)
+    # TODO: do the number of queries in the publish and resolve
 
     # snapshots = read_data('snapshots.csv')
-    # plot_rt_evolution(snapshots)
+    # # plot_rt_evolution(snapshots)
+    # plot_end_rt_state(snapshots)
 
 
 # TODO: charts by bucket and by experiment
