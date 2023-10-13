@@ -21,7 +21,7 @@ def plot_avg_success_resolve(data: pd.DataFrame):
 
     data = data.groupby([lk.PEER_DHT, lk.CID_TYPE])[lk.LOOKUP_TIME].agg(resolve_time='mean')
 
-    print(data)
+    # print(data)
     data.reset_index(level=(lk.CID_TYPE,), inplace=True)
     pivot_data = data.pivot(columns=lk.CID_TYPE, values='resolve_time').fillna(0)
 
@@ -31,16 +31,7 @@ def plot_avg_success_resolve(data: pd.DataFrame):
     )
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[f"{round(v, 2)} ms" if v > 0.0 else '' for v in cnt.datavalues])
-
-    # ax = filtered.groupby(lk.PEER_DHT)[lk.LOOKUP_TIME].mean().plot(
-    #     kind='bar',
-    #     figsize=(12, 8),
-    #     color=BARS_COLORS,
-    #     xlabel='',
-    # )
-
-    # # FIXME: better understand this thing
+        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues])
 
     plt.xticks(rotation=0, horizontalalignment="center")
     plt.xlabel('DHT version', fontweight='bold')
@@ -66,25 +57,13 @@ def plot_success_rate(data: pd.DataFrame):
     ax = pivot_data.plot(
         kind='bar',
         figsize=(14, 6),
-        color=BARS_COLORS[:],
+        color=BARS_COLORS[1:],
     )
 
-    print(pivot_data)
+    # print(pivot_data)
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[f"{round(v, 2)} %" if v > 0.0 else '' for v in cnt.datavalues])
-
-    # aux['srante'] = aux['sum'] / aux['count'] * 100
-    # ax = aux['srante'].plot(
-    #     kind='bar',
-    #     figsize=(12, 8),
-    #     color=BARS_COLORS,
-    #     xlabel='',
-    # )
-
-    # # FIXME: better understand this thing
-    # cnt = ax.containers[0]
-    # ax.bar_label(cnt, labels=[f"{round(v, 2)}%" for v in cnt.datavalues])
+        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues])
 
     plt.xticks(rotation=0, horizontalalignment="center")
     plt.xlabel('DHT version', fontweight='bold')
@@ -293,17 +272,38 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
         )
 
 
+def plot_avg_resolve_queries(data: pd.DataFrame):
+    data = data[
+        data[lk.PROVIDERS] > 0
+    ].groupby([lk.PEER_DHT, lk.CID_TYPE])[lk.QUERIES].mean().to_frame('avg-res-queries')
 
+    data.reset_index(level=(lk.CID_TYPE,), inplace=True)
+
+    pivot_data = data.pivot(columns=lk.CID_TYPE, values='avg-res-queries').fillna(0)
+
+    ax = pivot_data.plot(
+        kind='bar',
+        figsize=(12, 6),
+        color=BARS_COLORS[1:],
+    )
+
+    for cnt in ax.containers:
+        ax.bar_label(cnt, labels=[f"{int(round(v, 0))}" if v > 0.0 else '' for v in cnt.datavalues])
+
+    # print(pivot_data)
+
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.xlabel('DHT version', fontweight='bold')
+    plt.legend(title='CID Types')
+    plt.ylabel('Number of queries', fontweight='bold')
+    plt.title('Average number of queries per resolved CID', fontweight='bold')
+    # plt.show()
+    save_fig('avg-res-queries.pdf')
 
 
 
 def read_data(filename : str) -> pd.DataFrame:
     data = pd.read_csv(filename)
-
-    # some verfications
-    # assert len(data[
-    #     (data[lk.PEER_DHT] != data[lk.CID_TYPE]) & (data[lk.PROVIDERS] > 0)
-    # ]) == 0, "something is VERY WRONG"
 
     # NOTE: Akos said is not relevant at all having all here
     # aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
@@ -318,13 +318,13 @@ def read_data(filename : str) -> pd.DataFrame:
         data.replace(old, new, inplace=True)
 
     return data
-    #return pd.concat([data, aux], ignore_index=True)
 
 
 def main():
     data = read_data('lookups.csv')
     plot_avg_success_resolve(data)
     plot_success_rate(data)
+    plot_avg_resolve_queries(data)
     # plot_cids_lookups(data)
     # TODO: do the number of queries in the publish and resolve
 

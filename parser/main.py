@@ -12,9 +12,12 @@ import re
 from utils import Headers as hd
 from utils import Lookups as lk
 from utils import Snapshots as sp 
+from utils import Publishes as pv
 
 from typing import TypedDict
 from collections.abc import Iterator
+
+import pprint as pp
 
 # snapshots regular expression
 SNAPSHOTS_RE = re.compile('xxx-start-xxx([^"]+?)xxx-end-xxx')
@@ -31,8 +34,22 @@ class LookupRecord (TypedDict):
     queries   : list[str]
 
 class NodeInfo(TypedDict):
-    id  : str
+    id   : str
     mode : str
+    
+class PublishRecord(TypedDict):
+    cid       : str
+    time_ms   : float
+    providers : list[str]
+    queries   : list[str]    
+
+class ProvideRecord(TypedDict):
+    cid       : str
+    # time_ms   : float
+    peers    : list[str]
+
+class FullProvideRecord(PublishRecord):
+    store_nodes : list[str]
 
 class DhtType(Enum):
     SECURE  = 0
@@ -84,6 +101,34 @@ def load_snapshots(filename : str) -> Iterator[Snapshot]:
             yield snapshot
 
 
+def load_provides_record(prefix : str) -> list[FullProvideRecord]:
+    publish : dict[str, FullProvideRecord] = {}
+    with open(f'{prefix}-publish.log') as file:
+        for line in file:
+            res : PublishRecord = json.loads(
+                line.split(' ', maxsplit=2)[-1]
+            )
+            publish[res['cid']] = res
+
+    with open(f'{prefix}-provide.log') as file:
+        for line in file:
+            res =json.loads(
+                line.split('\t', maxsplit=4)[-1]
+            )
+
+            # there are some others cids published on the DHT
+            # when the nodes starts, so I am ignoring them
+            if res['cid'] in publish:
+                value = publish[res['cid']]
+                value['store_nodes'] = res['peers']
+            # res : ProvideRecord = json.loads(
+            #     line.split(' ', maxsplit=2)[-1]
+            # )
+    return list(publish.values())
+
+    
+
+    
 class Node:
     def __init__(self, pid : str, dht_type : DhtType):
         self.pid = pid
@@ -103,9 +148,12 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     log.info("loading files from: %s", dirname)
 
-    nodes      : dict[str, Node]    = {}
-    cids_type  : dict[str, DhtType] = {}
+    # TODO: make this instance variables and split the code into methods
+    nodes        : dict[str, Node]    = {}
+    cids_type    : dict[str, DhtType] = {}
     failed_nodes : set[str] = set()
+    bootstraps   : set[str] = set()
+    useless_cids : set[str] = set()
 
     # TODO: add loading bar :)
     # loads each node info (which is made of <node-id> and <dht-type> )
@@ -126,7 +174,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
             del nodes[peer_id]
 
     # list of (pid, peer_dht, cid, cid_type, lookup_time, providers, queries)
-    data = []
+    lookups = []
 
     # TODO: add loading bar :)
     # loads all CID records
@@ -150,7 +198,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
                 assert aux == '' or c_type == DhtType.parse_from(aux), 'cid type mistaken'
 
             assert providers <= 1
-            data.append(
+            lookups.append(
                 (node.get_pid(), node.get_dht().name, cid,
                     c_type.name, lookup_time, providers, queries)
             )
@@ -174,17 +222,68 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
                     dst_dht = 'Bootstrap' if dst_node is None else nodes[dst_pid].get_dht().name
                     src_dht = node.get_dht()
 
+                    if dst_dht == 'Bootstrap':
+                        bootstraps.add(dst_pid)
+
                     snapshots.append(
                         (node.get_pid(), src_dht.name,  dst_pid, dst_dht, snap_nr, bucket_nr)
                     )
+                
+    # list of (cid, src_pid, src_dht, queries_nr, time_ms, storage_node, storage_dht)
+    publishes = []
+    for node in nodes.values():
+        pb_records  = load_provides_record(f'{dirname}/{node.get_pid()}')
+        # print(f'node: {node.get_pid()}, dht: {node.get_dht().name}')
+        # pp.pprint(pb_records)
+        for rec in pb_records:
+            # provs_info[]
+            if rec['store_nodes'] == None: # we are dealing with a DEFAULT node
+                publishes.append((
+                    rec['cid'], 
+                    node.get_pid(), 
+                    node.get_dht().name, 
+                    len(rec['queries']), 
+                    rec['time_ms'],
+                    None, None
+                ))
+            else:
+                store_count = 0
+                for peer in rec['store_nodes']:
+                    # my fault, I need to look a this
+                    if peer in bootstraps: continue
+                    store_count += 1
+                    publishes.append((
+                        rec['cid'], 
+                        node.get_pid(), 
+                        node.get_dht().name, 
+                        len(rec['queries']), 
+                        rec['time_ms'],
+                        peer_id, 
+                        nodes[peer].get_dht().name
+                    ))
+                # if store_count == 0:
+                #     print(f'node: {node.get_pid()}, dht: {node.get_dht().name}')
+                #     print(store_count)
+                #     print('bootstraps')
+                #     pp.pprint(bootstraps)
+                #     print('record:')
+                #     pp.pprint(rec)
+                assert store_count > 0 , 'you gotta do something'
+                # print(store_count)
+        # assert store_count == 0 or store_count == len(pb_records), 'something is quite wrong'
+
+
 
 
     # TODO: add info about lookups
-    log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records", len(nodes), len(cids_type), len(data), len(snapshots))
-    return pd.DataFrame(data, 
-            columns=[lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS, lk.QUERIES]), pd.DataFrame(snapshots,
-                columns=[sp.SRC_PID, sp.SRC_DHT, sp.DST_PID, sp.DST_DHT, sp.SNAPSHOT_NR, sp.BUCKET_NR]
-            )
+    log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records, %d publish records", len(nodes), len(cids_type), len(lookups), len(snapshots), len(publishes))
+    return pd.DataFrame(lookups, 
+            columns=[lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS, lk.QUERIES]
+           ), pd.DataFrame(snapshots,
+               columns=[sp.SRC_PID, sp.SRC_DHT, sp.DST_PID, sp.DST_DHT, sp.SNAPSHOT_NR, sp.BUCKET_NR]
+           ), pd.DataFrame(publishes,
+                columns=[pv.CID, pv.SRC_PID, pv.SRC_DHT, pv.QUERIES_NR, pv.DURATION, pv.STORAGE_NODE, pv.STORAGE_DHT]
+           )
 
 
 # TODO: change this thing :)
@@ -195,18 +294,27 @@ def parse_args(args : list[str]) -> list[str]:
 def main(args : list[str]):
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
 
+    # pp.pprint(
+    #     load_provides_record('../logs/ipfs-logs/12D3KooW9pYxtNDHn6JdssZAhVrGyJ54u2WX6CCZxRYDCXibHzze')
+    # )
+    # print(
+    # )
+
     lookups   = []
     snapshots = []
+    publishes = []
     for exp_id, experiment in enumerate(parse_args(args)):
-        lkups, snap = parse_files(experiment)
+        lkups, snap, psh= parse_files(experiment)
 
         # set up experiment ids
         lkups[hd.EXP_ID] = exp_id 
         snap[hd.EXP_ID]  = exp_id
+        psh[hd.EXP_ID]   = exp_id
 
         # ...
         lookups.append(lkups)
         snapshots.append(snap)
+        publishes.append(psh)
 
     pd.concat(
         lookups, 
@@ -218,6 +326,11 @@ def main(args : list[str]):
         snapshots, 
         ignore_index=True
     ).set_index(sp.SRC_PID).to_csv('snapshots.csv')
+
+    pd.concat(
+        publishes, 
+        ignore_index=True
+    ).set_index(pv.SRC_PID).to_csv('publishes.csv')
 
 
 if __name__ == '__main__':

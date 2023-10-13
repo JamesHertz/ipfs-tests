@@ -18,3 +18,12 @@ class Snapshots(Headers):
     DST_DHT     = 'dst-dht'
     BUCKET_NR   = 'bucket-nr'
     SNAPSHOT_NR = 'snapshot-nr'
+
+class Publishes(Headers):
+    CID          = 'cid'
+    SRC_PID      = 'src-pid'
+    SRC_DHT      = 'src-dht'
+    QUERIES_NR   = 'queries-nr'
+    DURATION     = 'duration-time (ms)' 
+    STORAGE_NODE = 'storage-node'
+    STORAGE_DHT  = 'storage-dht'
