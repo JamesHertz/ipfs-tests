@@ -141,7 +141,7 @@ class Node:
         return self.dht_type
 
 # look-ups, snapshots
-def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
+def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     if not os.path.isdir(dirname):
         log.fatal("Error: path %s doesn't exists" % (dirname,))
         sys.exit(1)
@@ -173,35 +173,6 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
             failed_nodes.add(peer_id)
             del nodes[peer_id]
 
-    # list of (pid, peer_dht, cid, cid_type, lookup_time, providers, queries)
-    lookups = []
-
-    # TODO: add loading bar :)
-    # loads all CID records
-    for node in nodes.values():
-        times = load_look_up_times(f'{dirname}/{node.get_pid()}-lookup-times.log')
-        for time_rec in times:
-            cid         = time_rec['cid']
-            lookup_time = time_rec['time_ms']
-            providers   = len(time_rec['providers'])
-            c_type      = cids_type.get(cid)
-            queries     = len(time_rec['queries'])
-            # cid_type    = time_rec['type']
-
-            if c_type == None:
-                # TODO: think how to handle this
-                # log.warn("Discaring record: %s", time_rec)
-                assert providers == 0 
-                continue
-            elif c_type != DhtType.DEFAULT:
-                aux = time_rec['type']
-                assert aux == '' or c_type == DhtType.parse_from(aux), 'cid type mistaken'
-
-            assert providers <= 1
-            lookups.append(
-                (node.get_pid(), node.get_dht().name, cid,
-                    c_type.name, lookup_time, providers, queries)
-            )
         
     # TODO: 
     #  - add test that the provider is right and the type as well
@@ -237,7 +208,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
         # pp.pprint(pb_records)
         for rec in pb_records:
             # provs_info[]
-            if rec['store_nodes'] == None: # we are dealing with a DEFAULT node
+            if rec.get('store_nodes') == None: # we are dealing with a DEFAULT node
                 publishes.append((
                     rec['cid'], 
                     node.get_pid(), 
@@ -261,6 +232,8 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
                         peer_id, 
                         nodes[peer].get_dht().name
                     ))
+                if store_count == 0:
+                    useless_cids.add(rec['cid'])
                 # if store_count == 0:
                 #     print(f'node: {node.get_pid()}, dht: {node.get_dht().name}')
                 #     print(store_count)
@@ -268,15 +241,53 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame]:
                 #     pp.pprint(bootstraps)
                 #     print('record:')
                 #     pp.pprint(rec)
-                assert store_count > 0 , 'you gotta do something'
+                # assert store_count > 0 , 'you gotta do something'
                 # print(store_count)
         # assert store_count == 0 or store_count == len(pb_records), 'something is quite wrong'
 
 
+    # list of (pid, peer_dht, cid, cid_type, lookup_time, providers, queries)
+    lookups = []
+    # TODO: add loading bar :)
+    # loads all CID records
+    for node in nodes.values():
+        times = load_look_up_times(f'{dirname}/{node.get_pid()}-lookup-times.log')
+        for time_rec in times:
+            cid         = time_rec['cid']
+            lookup_time = time_rec['time_ms']
+            providers   = len(time_rec['providers'])
+            c_type      = cids_type.get(cid)
+            queries     = len(time_rec['queries'])
+            # cid_type    = time_rec['type']
+
+            # the node that was supposed to publish this CID failed
+            if c_type == None:
+                # TODO: think how to handle this
+                # log.warn("Discaring record: %s", time_rec)
+                assert providers == 0 
+                continue
+
+            # Normal node CID that was published only on bootstrap nodes
+            # which means it cannot be resolved so its useless
+            if cid in useless_cids: # TODO: discuss this with J. Leitao
+                # log.warn("Discaring useless CID record: %s", time_rec)
+                continue
+
+
+            if c_type != DhtType.DEFAULT:
+                aux = time_rec['type']
+                assert aux == '' or c_type == DhtType.parse_from(aux), 'cid type mistaken'
+
+            assert providers <= 1
+            lookups.append(
+                (node.get_pid(), node.get_dht().name, cid,
+                    c_type.name, lookup_time, providers, queries)
+            )
+
 
 
     # TODO: add info about lookups
-    log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records, %d publish records", len(nodes), len(cids_type), len(lookups), len(snapshots), len(publishes))
+    log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records, %d publish records, %d failed nodes, %d useless cids", len(nodes), len(cids_type), len(lookups), len(snapshots), len(publishes), len(failed_nodes), len(useless_cids))
     return pd.DataFrame(lookups, 
             columns=[lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS, lk.QUERIES]
            ), pd.DataFrame(snapshots,
