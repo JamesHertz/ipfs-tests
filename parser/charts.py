@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from utils import Lookups as lk
 from utils import Snapshots as sp 
+from utils import Publishes as pb
 
 BARS_COLORS = ['C10', 'C9', 'C1', 'C2']
 
@@ -80,7 +81,6 @@ def plot_success_rate(data: pd.DataFrame):
 def plot_cids_lookups(data: pd.DataFrame):
     # TODO: think if it's worthed to set constants
     # TODO: think on a way to solve the colors incovinience
-    data = data[ data[lk.PEER_DHT] != 'All' ]
     # total_resolves = len(data)
     # print(total_resolves)
     print('-----------------------')
@@ -303,7 +303,7 @@ def plot_avg_resolve_queries(data: pd.DataFrame):
 
 
 def read_data(filename : str) -> pd.DataFrame:
-    data = pd.read_csv(filename)
+    data = pd.read_csv(filename, low_memory=False)
 
     # NOTE: Akos said is not relevant at all having all here
     # aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
@@ -320,18 +320,93 @@ def read_data(filename : str) -> pd.DataFrame:
     return data
 
 
+def plot_puslibh_time(data: pd.DataFrame):
+    data = data[[pb.SRC_PID, pb.SRC_DHT, pb.EXP_ID, pb.CID, pb.DURATION]].drop_duplicates()
+    
+    ax = data.groupby(pb.SRC_DHT)[pb.DURATION].mean().plot(
+        kind='bar',
+        figsize=(12, 6),
+        color=BARS_COLORS[1:],
+    )
+
+    for cnt in ax.containers:
+        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues])
+
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.xlabel('DHT version', fontweight='bold')
+    plt.ylabel('time (ms)', fontweight='bold')
+    plt.title('Average publish time (ms)', fontweight='bold')
+    # plt.show()
+    save_fig('avg-publish-time.pdf')
+
+def plot_publish_queries(data: pd.DataFrame):
+    data = data[[pb.SRC_PID, pb.SRC_DHT, pb.EXP_ID, pb.CID, pb.QUERIES_NR]].drop_duplicates()
+    ax = data.groupby(pb.SRC_DHT)[pb.QUERIES_NR].mean().plot(
+        kind='bar',
+        figsize=(12, 6),
+        color=BARS_COLORS[1:],
+    )
+
+    for cnt in ax.containers:
+        ax.bar_label(cnt, labels=[round(v, 1) if v > 0.0 else '' for v in cnt.datavalues])
+
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.xlabel('DHT version', fontweight='bold')
+    plt.ylabel('Average number of queries', fontweight='bold')
+    plt.title('Average number of queries per published CID', fontweight='bold')
+    # plt.show()
+    save_fig('avg-publish-queries.pdf')
+
+    
+
+def plot_publish_nodes(data: pd.DataFrame):
+    data = data[ data[pb.SRC_DHT].isin(['Secure', 'Normal']) ]
+    data = data.groupby([
+        pb.EXP_ID, pb.SRC_PID, pb.SRC_DHT, pb.CID
+    ])[pb.STORAGE_DHT].value_counts().to_frame('count')
+
+    data.reset_index(level=(pb.STORAGE_DHT), inplace=True)
+
+    pivot = data.pivot(columns=pb.STORAGE_DHT, values='count').fillna(0)
+    pivot.reset_index(inplace=True)
+    pivot.drop(columns=[pb.SRC_PID, pb.EXP_ID, pb.CID], inplace=True)
+
+    ax = pivot.groupby(pb.SRC_DHT).mean().plot(
+        kind='bar',
+        color=BARS_COLORS[2:],
+        figsize=(12, 6),
+    )
+
+    for cnt in ax.containers:
+        ax.bar_label(cnt, labels=[round(v, 1) if v > 0.0 else '' for v in cnt.datavalues])
+
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.legend(title='Storage Nodes DHT')
+    plt.title('Average number of nodes published per CID', fontweight='bold')
+    plt.xlabel('DHT version', fontweight='bold')
+    plt.ylabel('Average number of nodes', fontweight='bold')
+    # plt.show()
+    save_fig('avg-published-nodes.pdf')
+
+
+# TODO:
+# remove all the duplication of the code
 def main():
-    data = read_data('lookups.csv')
-    plot_avg_success_resolve(data)
-    plot_success_rate(data)
-    plot_avg_resolve_queries(data)
-    # plot_cids_lookups(data)
+    lookups = read_data('lookups.csv')
+    plot_avg_success_resolve(lookups)
+    plot_success_rate(lookups)
+    plot_avg_resolve_queries(lookups)
+    plot_cids_lookups(lookups)
+
     # TODO: do the number of queries in the publish and resolve
+    snapshots = read_data('snapshots.csv')
+    # plot_rt_evolution(snapshots)
+    plot_end_rt_state(snapshots)
 
-    # snapshots = read_data('snapshots.csv')
-    # # plot_rt_evolution(snapshots)
-    # plot_end_rt_state(snapshots)
-
+    publishes = read_data('publishes.csv')
+    plot_publish_nodes(publishes)
+    plot_puslibh_time(publishes)
+    plot_publish_queries(publishes)
 
 # TODO: charts by bucket and by experiment
 # charts ideas:
