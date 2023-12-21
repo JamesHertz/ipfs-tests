@@ -1,0 +1,124 @@
+#!/usr/bin/env bash 
+
+set -e 
+shopt -s expand_aliases
+
+# some setup functions
+function set-ipfs-alias(){
+    case $MODE in
+        normal)
+            alias ipfs=ipfs-normal
+        ;;
+        secure)
+            alias ipfs=ipfs-secure
+        ;;
+        *)
+            alias ipfs=ipfs-default
+        ;;
+    esac
+}
+
+function calc-sequence-number(){
+    local total=$((REPLICA_ID-1))
+    if [ "$MODE" = "secure" ] ; then
+        total=$((total+EXP_TOTAL_NODES/2))
+    fi
+
+    if [ "$ROLE" != "bootstrap" ] ; then
+        total=$((total+TOTAL_BOOT_NODES))
+    fi
+
+    return $total
+}
+
+# init some variables c:
+export LOG_DIR=~/log
+export REPO_ID=$(calc-sequence-number)
+DIRS="$LOG_DIR $SHARED_DIR"
+exec 2>&1 > "$LOG_DIR/$REPO_ID-bash.log"
+set-ipfs-alias  
+
+
+# helper functions
+function log(){
+    echo -e "\n$1\n------------------------------"
+}
+
+function error(){
+    echo -e "ERROR: $1"
+    return 1
+}
+
+function save-logs(){
+
+    if [ -z "$NODE_ID" ] ; then
+        NODE_ID=${REPO_ID}
+    fi
+
+    # FIXME: find a better solution
+    for file in ${LOG_DIR}/* ; do 
+        echo "copying: $file to $EXP_LOG_DIR/$NODE_ID-$(basename "$file")"
+        mv "$file" "$EXP_LOG_DIR/$NODE_ID-$(basename "$file")"
+    done
+}
+
+# config function
+function setup-ipfs-repo(){
+    # gets the repo
+    cp -r "$EXP_REPOS_DIR/repo-$REPO_ID" ~/.ipfs
+
+    # to reset the it's addresses
+    ipfs config profile apply default-networking 
+
+    # remove bootstraps 
+    ipfs bootstrap rm --all
+
+    # to avoid confusion
+    ipfs config Discovery.MDNS.Enabled --bool false 
+
+    # reduce resource consuntion
+    ipfs config Swarm.ConnMgr.LowWater --json 20
+    ipfs config Swarm.ConnMgr.HighWater --json 50
+
+    # grade period
+    ipfs config Swarm.ConnMgr.GracePeriod 60s
+}
+
+# main function
+function main(){
+
+    trap 'save-logs' ERR
+
+    [ -z "$MODE" ] &&  error "MODE is not set"
+    [ -z "$ROLE" ] &&  error "ROLE is not set"
+
+    mkdir -p $DIRS
+
+    log "Initializing node..."
+
+    #  chooses a repo based on REPO_ID
+    setup-ipfs-repo
+
+    tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal
+
+    NODE_ID=$(ipfs id --format='<id>')
+
+    log "Starting experiments..."
+
+    # start daemon
+    GOLOG_FILE="$LOG_DIR/provide.log" ipfs daemon >> "$LOG_DIR/peers.log" 2>&1 &
+
+    cat > "${EXP_LOG_DIR}/${NODE_ID}.info" << EOF
+{"id": "$NODE_ID", "mode": "$MODE", "role": "$ROLE"} 
+EOF 
+
+    # wait a bit
+    ./ipfs-client --mode=$MODE --role=$ROLE >> "$LOG_DIR/client.log" 2>&1
+
+    log "Killing daemon..."
+    ipfs shutdown 
+
+    save-logs
+}
+
+main $*
