@@ -2,7 +2,7 @@
 
 set -e
 
-files="scripts/ images/ .env .ipfs-env"
+files="scripts/ images/ config/ .env .ipfs-env"
 case $1 in
     --build) 
         GOARCH=amd64 ./scripts/build.sh --bin

@@ -296,7 +296,7 @@ def plot_avg_resolve_queries(data: pd.DataFrame):
     plt.xlabel('DHT version', fontweight='bold')
     plt.legend(title='CID Types')
     plt.ylabel('Number of queries', fontweight='bold')
-    plt.title('Average number of queries per resolved CID', fontweight='bold')
+    plt.title('Average number of queries per resolved CID type', fontweight='bold')
     # plt.show()
     save_fig('avg-res-queries.pdf')
 
@@ -393,20 +393,20 @@ def plot_publish_nodes(data: pd.DataFrame):
 # remove all the duplication of the code
 def main():
     lookups = read_data('lookups.csv')
-    plot_avg_success_resolve(lookups)
-    plot_success_rate(lookups)
+    # plot_avg_success_resolve(lookups)
+    # # plot_success_rate(lookups)
     plot_avg_resolve_queries(lookups)
-    plot_cids_lookups(lookups)
+    # plot_cids_lookups(lookups)
 
     # TODO: do the number of queries in the publish and resolve
-    snapshots = read_data('snapshots.csv')
-    # plot_rt_evolution(snapshots)
-    plot_end_rt_state(snapshots)
+    # snapshots = read_data('snapshots.csv')
+    # # plot_rt_evolution(snapshots)
+    # plot_end_rt_state(snapshots)
 
-    publishes = read_data('publishes.csv')
-    plot_publish_nodes(publishes)
-    plot_puslibh_time(publishes)
-    plot_publish_queries(publishes)
+    # publishes = read_data('publishes.csv')
+    # plot_publish_nodes(publishes)
+    # plot_puslibh_time(publishes)
+    # plot_publish_queries(publishes)
 
 # TODO: charts by bucket and by experiment
 # charts ideas:
