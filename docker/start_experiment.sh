@@ -28,14 +28,14 @@ function calc-sequence-number(){
         total=$((total+TOTAL_BOOT_NODES))
     fi
 
-    return $total
+    echo $total
 }
 
 # init some variables c:
 export LOG_DIR=~/log
-export REPO_ID=$(calc-sequence-number)
+export NODE_SEQ_NR=$(calc-sequence-number)
 DIRS="$LOG_DIR $SHARED_DIR"
-exec 2>&1 > "$LOG_DIR/$REPO_ID-bash.log"
+exec 2>&1 > "$LOG_DIR/$NODE_SEQ_NR-bash.log"
 set-ipfs-alias  
 
 
@@ -52,7 +52,7 @@ function error(){
 function save-logs(){
 
     if [ -z "$NODE_ID" ] ; then
-        NODE_ID=${REPO_ID}
+        NODE_ID=${NODE_SEQ_NR}
     fi
 
     # FIXME: find a better solution
@@ -65,7 +65,7 @@ function save-logs(){
 # config function
 function setup-ipfs-repo(){
     # gets the repo
-    cp -r "$EXP_REPOS_DIR/repo-$REPO_ID" ~/.ipfs
+    cp -r "$EXP_REPOS_DIR/repo-$NODE_SEQ_NR" ~/.ipfs
 
     # to reset the it's addresses
     ipfs config profile apply default-networking 
@@ -96,7 +96,7 @@ function main(){
 
     log "Initializing node..."
 
-    #  chooses a repo based on REPO_ID
+    #  chooses a repo based on NODE_SEQ_NR
     setup-ipfs-repo
 
     tc qdisc add dev eth0 root netem delay 50ms 20ms distribution normal

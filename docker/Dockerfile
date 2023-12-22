@@ -3,6 +3,7 @@ FROM ubuntu
 WORKDIR /ipfs-tests
 
 COPY bin/* /usr/bin
+COPY docker/start_experiment.sh ./
 
 RUN apt-get update \
     && apt-get install iproute2 -y 
