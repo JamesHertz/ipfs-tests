@@ -123,12 +123,12 @@ function main(){
     log "Daemon started"
 
     cat > "${EXP_LOG_DIR}/${NODE_ID}.info" <<EOF
-        {"id": "$NODE_ID", "mode": "$NODE_MODE", "role": "$NODE_ROLE"} 
+{"id": "$NODE_ID", "mode": "$NODE_MODE", "role": "$NODE_ROLE"} 
 EOF
 
     log "Starting client..."
     # wait a bit
-    sleep 10 && ipfs-client >> "$LOG_DIR/client.log" 2>&1
+    sleep 30 && ipfs-client >> "$LOG_DIR/client.log" 2>&1
 
     log "Killing daemon..."
     ipfs shutdown 

@@ -67,7 +67,7 @@ function create-boot-file(){
 
 
 function convert-timestamp(){
-    scripts/utils.py convert $1
+    scripts/utils.py convert "$1"
 }
 
 # function create-network {
@@ -138,10 +138,13 @@ function run-experiment(){
     sleep 60  && create-boot-file
 
     local duration_seconds=$(convert-timestamp "$EXP_DURATION")
-    local current_time=$(date +%s)
+    local extra_seconds=$(convert-timestamp "$EXP_EXTRA_TIME")
+    local grace_seconds=$(convert-timestamp "$EXP_GRACE_TIME")
 
-    local wait_time=$((current_time-duration_seconds-EXP_START_TIME))
-    log "Waiting $((wait_time/60)) minutes to experiment end"
+    local end_time=$((EXP_START_TIME+duration_seconds+extra_seconds+grace_seconds))
+
+    local wait_time=$((end_time-current_time))
+    log "Waiting until $(date -d @$end_time) to end experiment"
 
     sleep "$wait_time" && get-logs
     echo -e "\nDone!!!\n"
