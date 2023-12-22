@@ -2,7 +2,7 @@
 
 set -e
 
-files="scripts/ images/ config/ .env"
+files="scripts/ docker/ config/ Makefile .env"
 case $1 in
     --build) 
         GOARCH=amd64 ./scripts/build.sh --bin

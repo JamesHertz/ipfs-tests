@@ -1,6 +1,7 @@
 FROM ubuntu
 
-WORKDIR /ipfs-tests
+ENV HOME=/ipfs-tests/home
+WORKDIR $HOME
 
 COPY bin/* /usr/bin
 COPY docker/start_experiment.sh ./

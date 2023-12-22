@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-set -e 
+# TODO: research about -E
+set -eE
 
 # env file
 set -a
@@ -31,8 +32,8 @@ NEW_EXP_ID=new
 USAGE="usage: $0 <command>
 
 The commands are:
-    run ${bold}<compose-file>${normal}  
-            runs experiment defined on ${bold}<compose-file>${normal}
+    start ${bold}<compose_file>${normal}  
+            runs experiment defined on ${bold}<compose_file>${normal}
     logs    clear and save logs in the ${bold}LOG_DIR/ipfs-log-{${normal}count${bold}}${normal} dir
     clean   clear logs without saving them
     help    displays the usage 
@@ -112,8 +113,8 @@ function convert-timestamp(){
 
 # run main function
 function run-experiment(){
-    compose-file=$1
-    ![ -f "${compose-file}"] && error "File '${compose-file}' not found"
+    local compose_file=$1
+    ! [ -f "$compose_file" ] && error "File '$compose_file' not found\n\n$USAGE"
 
     make -s
 
@@ -127,13 +128,14 @@ function run-experiment(){
     local current_time=$(date +%s)
     local launch_seconds=$(convert-timestamp "$EXP_LAUNCH_PERIOD")
     export EXP_START_TIME=$((current_time+launch_seconds))
+    echo -e "\nEXP_START_TIME=$EXP_START_TIME" >> "$IPFS_ENV_FILE"
 
     log "Starting experiment..."
-    docker stack deploy -c "${compose-file}" "$STACK_NAME"
+    docker stack deploy -c "$compose_file" "$STACK_NAME"
 
     log "Waiting 1 minutes and Building boot file..."
     # wait a bit and build boot-file
-    sleep 60 && build-boot-file
+    sleep 60  && create-boot-file
 
     local duration_seconds=$(convert-timestamp "$EXP_DURATION")
     local current_time=$(date +%s)
@@ -167,7 +169,7 @@ function get-logs () {
 function main(){
     # reserve nodes: -t docker-swarm
     case $1 in 
-        run)
+        start)
             run-experiment "$2"
         ;;
         logs)

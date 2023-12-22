@@ -1,8 +1,21 @@
 # starts the compose file c:
-x-extends: &base-service
-  extends:
-    file: common.yml
-    service: base-service 
+x-deploy: &deploy-cfg
+  restart_policy:
+    condition: none
+  resources:
+    limits:
+      memory: 1G
+
+x-base-service: &base-service
+    image: ipfs-tests
+    cap_add:
+      - NET_ADMIN
+    networks: 
+      - ipfs-network
+    env_file: 
+      - ../.ipfs-env
+    volumes:
+      - ${SHARED_DIR}:${EXP_SHARED_DIR}
 
 version: "3"
 services:
@@ -12,6 +25,7 @@ services:
       - NODE_MODE=normal
       - NODE_ROLE=worker
     deploy:
+      <<: *deploy-cfg
       replicas: ${EXP_NORMAL_NODES:?Missing number of normal worker nodes}
     depends_on:
       - secure-bootrap-nodes
@@ -23,6 +37,7 @@ services:
       - NODE_MODE=secure
       - NODE_ROLE=worker
     deploy:
+      <<: *deploy-cfg
       replicas: ${EXP_SECURE_NODES:?Missing number of secure worker nodes}
     depends_on:
       - secure-bootrap-nodes
@@ -34,6 +49,7 @@ services:
       - NODE_MODE=normal
       - NODE_ROLE=bootstrap
     deploy:
+      <<: *deploy-cfg
       replicas: ${EXP_NORMAL_BOOT_NODES:?Missing number of normal bootstrap nodes}
 
   secure-bootrap-nodes:
@@ -42,6 +58,7 @@ services:
       - NODE_MODE=secure
       - NODE_ROLE=bootstrap
     deploy:
+      <<: *deploy-cfg
       replicas: ${EXP_SECURE_BOOT_NODES:?Missing number of secure bootstrap nodes}
   
 networks:

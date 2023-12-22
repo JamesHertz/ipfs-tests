@@ -20,7 +20,7 @@ def build_boot_file():
     log.info("started bfile-builder.py")
     boot_addrs = []
     boot_dir   = os.getenv("SHARED_BOOT_DIR")
-    boot_nodes = int(os.getenv("EXP_BOOT_NODES"))
+    boot_nodes = int(os.getenv("EXP_TOTAL_BOOT_NODES"))
 
     for filename in os.listdir(boot_dir):
         log.debug("reading file: %s", filename)

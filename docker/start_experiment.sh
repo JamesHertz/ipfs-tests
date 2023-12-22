@@ -43,7 +43,12 @@ function calc-sequence-number(){
 # init some variables c:
 export LOG_DIR=~/log
 export NODE_SEQ_NR=$(calc-sequence-number)
-DIRS="$LOG_DIR $SHARED_DIR"
+
+# build dirs :
+# mkdir -p "$LOG_DIR $EXP_SHARED_DIR"
+mkdir -p $LOG_DIR
+
+# setup logs 
 exec 2>&1 > "$LOG_DIR/$NODE_SEQ_NR-bash.log"
 setup-ipfs-alias  
 
@@ -101,8 +106,6 @@ function main(){
     [ -z "$NODE_MODE" ] &&  error "NODE_MODE is not set"
     [ -z "$NODE_ROLE" ] &&  error "NODE_ROLE is not set"
 
-    mkdir -p $DIRS
-
     log "Initializing node..."
 
     #  chooses a repo based on NODE_SEQ_NR
@@ -117,12 +120,15 @@ function main(){
     # start daemon
     GOLOG_FILE="$LOG_DIR/provide.log" ipfs daemon >> "$LOG_DIR/peers.log" 2>&1 &
 
-    cat > "${EXP_LOG_DIR}/${NODE_ID}.info" << EOF
-{"id": "$NODE_ID", "mode": "$NODE_MODE", "role": "$NODE_ROLE"} 
-EOF 
+    log "Daemon started"
 
+    cat > "${EXP_LOG_DIR}/${NODE_ID}.info" <<EOF
+        {"id": "$NODE_ID", "mode": "$NODE_MODE", "role": "$NODE_ROLE"} 
+EOF
+
+    log "Starting client..."
     # wait a bit
-    ./ipfs-client >> "$LOG_DIR/client.log" 2>&1
+    sleep 10 && ipfs-client >> "$LOG_DIR/client.log" 2>&1
 
     log "Killing daemon..."
     ipfs shutdown 

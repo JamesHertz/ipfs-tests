@@ -1,26 +1,43 @@
 # starts the compose file c:
 version: "3"
+
+x-deploy: &deploy-cfg
+  restart_policy:
+    condition: none
+  resources:
+    limits:
+      memory: 1G
+
+x-base-service: &base-service
+    image: ipfs-tests
+    cap_add:
+      - NET_ADMIN
+    networks: 
+      - ipfs-network
+    env_file: 
+      - ../.ipfs-env
+    volumes:
+      - ${SHARED_DIR}:${EXP_SHARED_DIR}
+
 services:
   default-nodes:
-    extends:
-      file: common.yml
-      service: base-service 
+    <<: *base-service
     environment:
       - NODE_MODE=default
       - NODE_ROLE=worker
     deploy:
+      <<: *deploy-cfg
       replicas: ${EXP_TOTAL_WORKER_NODES:?Missing number of worker nodes}
     depends_on:
       - bootrap-nodes
 
   bootrap-nodes:
-    extends:
-      file: common.yml
-      service: base-service 
+    <<: *base-service
     environment:
       - NODE_MODE=default
       - NODE_ROLE=bootstrap
     deploy:
+      <<: *deploy-cfg
       replicas: ${EXP_TOTAL_BOOT_NODES:?Missing number of bootstrap nodes}
   
 networks:
