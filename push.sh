@@ -2,7 +2,7 @@
 
 set -e
 
-files="scripts/ images/ config/ .env .ipfs-env"
+files="scripts/ images/ config/ .env"
 case $1 in
     --build) 
         GOARCH=amd64 ./scripts/build.sh --bin
@@ -10,4 +10,4 @@ case $1 in
     ;;
 esac
 
-make -s && scp -r $files dicluster:~/ipfs-tests
+scp -r $files dicluster:~/ipfs-tests

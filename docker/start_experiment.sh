@@ -25,7 +25,16 @@ function calc-sequence-number(){
     fi
 
     if [ "$NODE_ROLE" != "bootstrap" ] ; then
-        total=$((total+TOTAL_BOOT_NODES))
+        local delta=$TOTAL_BOOT_NODES
+        case $NODE_MODE in
+            normal)
+                delta=$EXP_NORMAL_BOOT_NODES
+            ;;
+            secure)
+                delta=$EXP_SECURE_BOOT_NODES
+            ;;
+        esac
+        total=$((total+delta))
     fi
 
     echo $total
