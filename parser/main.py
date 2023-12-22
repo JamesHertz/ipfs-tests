@@ -301,7 +301,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 def parse_args(args : list[str]) -> list[str]:
     # return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
     # return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(6) ]
-    return [ '../logs/ipfs-logs-6' ]
+    return [ '../logs/ipfs-logs-8' ]
 
 def main(args : list[str]):
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")

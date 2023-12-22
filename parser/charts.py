@@ -245,7 +245,7 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
         ax = data.plot(
             kind='bar',
             figsize=(12, 6),
-            color=['C3', BARS_COLORS[2], BARS_COLORS[3]]
+            color=[BARS_COLORS[2], BARS_COLORS[3]]
         )
 
         for cnt in ax.containers:
@@ -253,7 +253,7 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
 
         plt.xticks(rotation=0, horizontalalignment="center")
         plt.title(title, fontweight='bold')
-        # plt.title('Percentage of nodes of each DHT version known by each', fontweight='bold')
+        plt.title('Percentage of nodes of each DHT version known by each', fontweight='bold')
         plt.xlabel('DHT version', fontweight='bold')
         plt.ylabel('percentage of the nodes in DHT', fontweight='bold')
         plt.legend(title='CID types')
@@ -275,7 +275,7 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
             f'Percentage of nodes neibours in the bucket {bucket}', 
             f'rt-end-state-bucket-{bucket}.pdf'
         )
-    save_fig('rt-end-state-by-bucket.pdf')
+    # save_fig('rt-end-state-by-bucket.pdf')
 
 
 def plot_avg_resolve_queries(data: pd.DataFrame):
@@ -402,15 +402,15 @@ def main():
     plot_avg_success_resolve(lookups)
     plot_success_rate(lookups)
     plot_avg_resolve_queries(lookups)
-    # plot_cids_lookups(lookups)
+    plot_cids_lookups(lookups)
 
     # TODO: do the number of queries in the publish and resolve
-    # snapshots = read_data('snapshots.csv')
-    # # plot_rt_evolution(snapshots)
-    # plot_end_rt_state(snapshots)
+    snapshots = read_data('snapshots.csv')
+    # plot_rt_evolution(snapshots)
+    plot_end_rt_state(snapshots)
 
     publishes = read_data('publishes.csv')
-    # plot_publish_nodes(publishes)
+    plot_publish_nodes(publishes)
     plot_puslibh_time(publishes)
     plot_publish_queries(publishes)
 
