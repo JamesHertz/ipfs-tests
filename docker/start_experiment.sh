@@ -4,7 +4,7 @@ set -e
 shopt -s expand_aliases
 
 # some setup functions
-function set-ipfs-alias(){
+function setup-ipfs-alias(){
     case $MODE in
         normal)
             alias ipfs=ipfs-normal
@@ -36,7 +36,7 @@ export LOG_DIR=~/log
 export NODE_SEQ_NR=$(calc-sequence-number)
 DIRS="$LOG_DIR $SHARED_DIR"
 exec 2>&1 > "$LOG_DIR/$NODE_SEQ_NR-bash.log"
-set-ipfs-alias  
+setup-ipfs-alias  
 
 
 # helper functions
@@ -113,7 +113,7 @@ function main(){
 EOF 
 
     # wait a bit
-    ./ipfs-client --mode=$MODE --role=$ROLE >> "$LOG_DIR/client.log" 2>&1
+    ./ipfs-client >> "$LOG_DIR/client.log" 2>&1
 
     log "Killing daemon..."
     ipfs shutdown 
