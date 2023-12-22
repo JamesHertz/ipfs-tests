@@ -24,3 +24,7 @@ services:
 networks:
   ipfs-network:
     driver: overlay
+
+# volumes:
+#   ipfs-volume:
+#     - ${SHARED_VOLUME}:${EXP_SHARED_VOLUME}

@@ -30,10 +30,11 @@ NEW_EXP_ID=new
 USAGE="usage: $0 <command>
 
 The commands are:
-    run ${bold}<id>${normal}   runs experiment identified by ${bold}<id>${normal} that can be ${bold}${BASE_EXP_ID}${normal} or ${bold}${NEW_EXP_ID}${normal}
-    logs       clear and save logs in the ${bold}LOG_DIR/ipfs-log-{${normal}count${bold}}${normal} dir
-    clean      clear logs without saving them
-    help       displays the usage 
+    run ${bold}<docker-compose-file>${normal}   
+            runs experiment defined on ${bold}<docker-compose-file>${normal}
+    logs    clear and save logs in the ${bold}LOG_DIR/ipfs-log-{${normal}count${bold}}${normal} dir
+    clean   clear logs without saving them
+    help    displays the usage 
 "
 
 
