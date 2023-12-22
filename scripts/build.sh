@@ -14,7 +14,7 @@ OUTBIN=$PWD/bin
 
 KUBO_REPO=./repos/kubo-ipfs
 CLIENT_REPO=./repos/ipfs-client
-BOOT_REPO=./repos/boot-nodes
+# BOOT_REPO=./repos/boot-nodes
 
 DEFAULT_KUBO_SUFFIX="default"
 
@@ -46,8 +46,10 @@ WSERVER_IMAGE=webmaster
 CLIENT_BIN="ipfs-client"
 
 # webserver and kubo docker file
-KUBO_DFILE=./images/common/Dockerfile
-BOOT_DFILE=./images/boot-nodes/Dockerfile
+# KUBO_DFILE=./images/common/Dockerfile
+# BOOT_DFILE=./images/boot-nodes/Dockerfile
+DOCKER_FILE=./docker/Dockerfile
+DOCKER_IMAGE=ipfs-tests
 
 USAGE="usage: $0 [ --images | --bin | --all | --clean | --help ]"
 
@@ -113,18 +115,19 @@ function build-binaries(){
         fi
     popd 
 
-    log "building root versions"
-    pushd "$BOOT_REPO"
-        build-kubo-bin "default-boot"
+    # TODO: delete this ...
+    # log "building root versions"
+    # pushd "$BOOT_REPO"
+    #     build-kubo-bin "default-boot"
 
-        IFS=':' read -ra values <<< "${NEW_KUBO_VERSIONS[1]}"
+    #     IFS=':' read -ra values <<< "${NEW_KUBO_VERSIONS[1]}"
 
-        # setup depencies
-        new-dht-default-depencies 
-        switch-dht-depency "${values[1]}"
+    #     # setup depencies
+    #     new-dht-default-depencies 
+    #     switch-dht-depency "${values[1]}"
 
-        build-kubo-bin "upgradable-boot"
-    popd 
+    #     build-kubo-bin "upgradable-boot"
+    # popd 
 
 
     log "building kubo versions"
@@ -158,35 +161,36 @@ function build-images(){
 
     log "building images..."
 
-    for file in ./bin/ipfs-* ; do
-        local binary_name=$(basename "$file")
+    docker build -t "$DOCKER_IMAGE" --file "$DOCKER_FILE" . 
+    # for file in ./bin/ipfs-* ; do
+    #     local binary_name=$(basename "$file")
 
-        # if the binary is one of the versions (let's generate a docker image)
-        if ! [ "$CLIENT_BIN"  = "$binary_name" ] ; then 
+    #     # if the binary is one of the versions (let's generate a docker image)
+    #     if ! [ "$CLIENT_BIN"  = "$binary_name" ] ; then 
 
-            # TODO: change the way you get the mode :)
-            IFS='-' read -ra values <<< "$binary_name"
-            local mode=${values[1]}
+    #         # TODO: change the way you get the mode :)
+    #         IFS='-' read -ra values <<< "$binary_name"
+    #         local mode=${values[1]}
 
-            echo -e "> building $binary_name" 
-            docker build -t "$binary_name" \
-                --build-arg "binary=$binary_name" \
-                --build-arg "mode=$mode" --file "$KUBO_DFILE" . 
-            echo
-        fi
-    done
+    #         echo -e "> building $binary_name" 
+    #         docker build -t "$binary_name" \
+    #             --build-arg "binary=$binary_name" \
+    #             --build-arg "mode=$mode" --file "$KUBO_DFILE" . 
+    #         echo
+    #     fi
+    # done
 
-    for file in ./bin/*-boot ; do
-        local binary_name=$(basename "$file")
+    # for file in ./bin/*-boot ; do
+    #     local binary_name=$(basename "$file")
 
-        IFS='-' read -ra values <<< "$binary_name"
-        local setup=${values[0]}
+    #     IFS='-' read -ra values <<< "$binary_name"
+    #     local setup=${values[0]}
 
-        echo -e "> building $binary_name" 
-        docker build -t "$binary_name" \
-            --build-arg "setup=$setup" --file "$BOOT_DFILE" . 
-        echo
-    done
+    #     echo -e "> building $binary_name" 
+    #     docker build -t "$binary_name" \
+    #         --build-arg "setup=$setup" --file "$BOOT_DFILE" . 
+    #     echo
+    # done
 
 
 }

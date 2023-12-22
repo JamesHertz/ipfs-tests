@@ -1,0 +1,17 @@
+# starts the compose file c:
+version: "3"
+services:
+  base-service:
+    image: ipfs-tests
+    cap_add:
+      - NET_ADMIN
+    networks: 
+      - ipfs-network
+    env_file: 
+      - .ipfs-env
+    deploy:
+      restart_policy:
+        condition: none
+      resources:
+        limits:
+          memory: 1G

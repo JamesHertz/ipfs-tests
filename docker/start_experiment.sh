@@ -5,7 +5,7 @@ shopt -s expand_aliases
 
 # some setup functions
 function setup-ipfs-alias(){
-    case $MODE in
+    case $NODE_MODE in
         normal)
             alias ipfs=ipfs-normal
         ;;
@@ -20,11 +20,11 @@ function setup-ipfs-alias(){
 
 function calc-sequence-number(){
     local total=$((REPLICA_ID-1))
-    if [ "$MODE" = "secure" ] ; then
+    if [ "$NODE_MODE" = "secure" ] ; then
         total=$((total+EXP_TOTAL_NODES/2))
     fi
 
-    if [ "$ROLE" != "bootstrap" ] ; then
+    if [ "$NODE_ROLE" != "bootstrap" ] ; then
         total=$((total+TOTAL_BOOT_NODES))
     fi
 
@@ -89,8 +89,8 @@ function main(){
 
     trap 'save-logs' ERR
 
-    [ -z "$MODE" ] &&  error "MODE is not set"
-    [ -z "$ROLE" ] &&  error "ROLE is not set"
+    [ -z "$NODE_MODE" ] &&  error "NODE_MODE is not set"
+    [ -z "$NODE_ROLE" ] &&  error "NODE_ROLE is not set"
 
     mkdir -p $DIRS
 
@@ -109,7 +109,7 @@ function main(){
     GOLOG_FILE="$LOG_DIR/provide.log" ipfs daemon >> "$LOG_DIR/peers.log" 2>&1 &
 
     cat > "${EXP_LOG_DIR}/${NODE_ID}.info" << EOF
-{"id": "$NODE_ID", "mode": "$MODE", "role": "$ROLE"} 
+{"id": "$NODE_ID", "mode": "$NODE_MODE", "role": "$NODE_ROLE"} 
 EOF 
 
     # wait a bit
