@@ -25,7 +25,7 @@ function calc-sequence-number(){
     fi
 
     if [ "$NODE_ROLE" != "bootstrap" ] ; then
-        local delta=$TOTAL_BOOT_NODES
+        local delta=$EXP_TOTAL_BOOT_NODES
         case $NODE_MODE in
             normal)
                 delta=$EXP_NORMAL_BOOT_NODES

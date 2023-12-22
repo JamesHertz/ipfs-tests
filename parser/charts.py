@@ -241,7 +241,7 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
         & (snapshots[sp.SRC_DHT].isin(['Secure', 'Normal']))
     ]
 
-    def built_chart(data: pd.DataFrame, title: str, filename: str):
+    def built_chart(data: pd.DataFrame, title: str, filename: str = None):
         ax = data.plot(
             kind='bar',
             figsize=(12, 6),
@@ -257,12 +257,17 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
         plt.xlabel('DHT version', fontweight='bold')
         plt.ylabel('percentage of the nodes in DHT', fontweight='bold')
         plt.legend(title='CID types')
-        save_fig(filename)
+        if filename is not None:
+            save_fig(filename)
 
     data = calc_rt_state(snapshots)
     built_chart(data, 'Percentage of nodes neibours in the Routing table', 'rt-end-state.pdf')
 
+    # buckets = snapshots[sp.BUCKET_NR].unique()
     for bucket in snapshots[sp.BUCKET_NR].unique():
+    # for i, bucket in enumerate(buckets):
+        # plt.subplot(1, len(buckets), i + 1)
+        # print("i=", i)
         aux = snapshots[snapshots[sp.BUCKET_NR] == bucket]
         data = calc_rt_state(aux)
         built_chart(
@@ -270,6 +275,7 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
             f'Percentage of nodes neibours in the bucket {bucket}', 
             f'rt-end-state-bucket-{bucket}.pdf'
         )
+    save_fig('rt-end-state-by-bucket.pdf')
 
 
 def plot_avg_resolve_queries(data: pd.DataFrame):
@@ -393,8 +399,8 @@ def plot_publish_nodes(data: pd.DataFrame):
 # remove all the duplication of the code
 def main():
     lookups = read_data('lookups.csv')
-    # plot_avg_success_resolve(lookups)
-    # # plot_success_rate(lookups)
+    plot_avg_success_resolve(lookups)
+    plot_success_rate(lookups)
     plot_avg_resolve_queries(lookups)
     # plot_cids_lookups(lookups)
 
@@ -403,10 +409,10 @@ def main():
     # # plot_rt_evolution(snapshots)
     # plot_end_rt_state(snapshots)
 
-    # publishes = read_data('publishes.csv')
+    publishes = read_data('publishes.csv')
     # plot_publish_nodes(publishes)
-    # plot_puslibh_time(publishes)
-    # plot_publish_queries(publishes)
+    plot_puslibh_time(publishes)
+    plot_publish_queries(publishes)
 
 # TODO: charts by bucket and by experiment
 # charts ideas:
