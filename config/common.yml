@@ -8,9 +8,9 @@ services:
     networks: 
       - ipfs-network
     env_file: 
-      - .ipfs-env
+      - ../.ipfs-env
     volumes:
-      - ${SHARED_VOLUME}:${EXP_SHARED_VOLUME}
+      - ${SHARED_DIR}:${EXP_SHARED_DIR}
     deploy:
       restart_policy:
         condition: none

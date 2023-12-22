@@ -1,0 +1,49 @@
+# starts the compose file c:
+x-extends: &base-service
+  extends:
+    file: common.yml
+    service: base-service 
+
+version: "3"
+services:
+  normal-nodes:
+    <<: *base-service
+    environment:
+      - NODE_MODE=normal
+      - NODE_ROLE=worker
+    deploy:
+      replicas: ${EXP_NORMAL_NODES:?Missing number of normal worker nodes}
+    depends_on:
+      - secure-bootrap-nodes
+      - normal-bootrap-nodes
+
+  secure-nodes:
+    <<: *base-service
+    environment:
+      - NODE_MODE=secure
+      - NODE_ROLE=worker
+    deploy:
+      replicas: ${EXP_SECURE_NODES:?Missing number of secure worker nodes}
+    depends_on:
+      - secure-bootrap-nodes
+      - normal-bootrap-nodes
+
+  normal-bootrap-nodes:
+    <<: *base-service
+    environment:
+      - NODE_MODE=normal
+      - NODE_ROLE=bootstrap
+    deploy:
+      replicas: ${EXP_NORMAL_BOOT_NODES:?Missing number of normal bootstrap nodes}
+
+  secure-bootrap-nodes:
+    <<: *base-service
+    environment:
+      - NODE_MODE=secure
+      - NODE_ROLE=bootstrap
+    deploy:
+      replicas: ${EXP_SECURE_BOOT_NODES:?Missing number of secure bootstrap nodes}
+  
+networks:
+  ipfs-network:
+    driver: overlay

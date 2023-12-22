@@ -1,6 +1,6 @@
 /bin
 /logs
-/.ipfs-env
+.ipfs-env
 /tmp
 *.pdf
 *.csv

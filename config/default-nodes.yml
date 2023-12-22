@@ -3,28 +3,26 @@ version: "3"
 services:
   default-nodes:
     extends:
-      file: base.yml
+      file: common.yml
       service: base-service 
-    enviroment:
+    environment:
       - NODE_MODE=default
       - NODE_ROLE=worker
     deploy:
-      replicas: ${TOTAL_WORKER_NODES:?Missing number of worker nodes}
+      replicas: ${EXP_TOTAL_WORKER_NODES:?Missing number of worker nodes}
+    depends_on:
+      - bootrap-nodes
 
   bootrap-nodes:
     extends:
-      file: base.yml
+      file: common.yml
       service: base-service 
-    enviroment:
+    environment:
       - NODE_MODE=default
       - NODE_ROLE=bootstrap
     deploy:
-      replicas: ${TOTAL_BOOTSTRAP_NODES:?Missing number of bootstrap nodes}
+      replicas: ${EXP_TOTAL_BOOT_NODES:?Missing number of bootstrap nodes}
   
 networks:
   ipfs-network:
     driver: overlay
-
-# volumes:
-#   ipfs-volume:
-#     - ${SHARED_VOLUME}:${EXP_SHARED_VOLUME}
