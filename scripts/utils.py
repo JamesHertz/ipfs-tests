@@ -17,7 +17,7 @@ commands:
 """
 
 def build_boot_file():
-    log.info("started bfile-builder.py")
+    log.info("started build-boot-file process...")
     boot_addrs = []
     boot_dir   = os.getenv("SHARED_BOOT_DIR")
     boot_nodes = int(os.getenv("EXP_TOTAL_BOOT_NODES"))
