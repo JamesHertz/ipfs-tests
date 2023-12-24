@@ -45,7 +45,7 @@ class PublishRecord(TypedDict):
 
 class ProvideRecord(TypedDict):
     cid       : str
-    # time_ms   : float
+    time_ms   : float
     peers    : list[str]
 
 class FullProvideRecord(PublishRecord):
@@ -109,7 +109,6 @@ def load_provides_record(prefix : str) -> list[FullProvideRecord]:
                 line.split(' ', maxsplit=2)[-1]
             )
             publish[res['cid']] = res
-
     # with open(f'{prefix}-provide.log') as file:
     #     for line in file:
     #         res =json.loads(
@@ -152,8 +151,11 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
     nodes        : dict[str, Node]    = {}
     cids_type    : dict[str, DhtType] = {}
     failed_nodes : set[str] = set()
-    bootstraps   : set[str] = set()
     useless_cids : set[str] = set()
+
+
+    resolved = set()
+    published = set()
 
     # TODO: add loading bar :)
     # loads each node info (which is made of <node-id> and <dht-type> )
@@ -187,19 +189,14 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 
                     # TODO: I wonder why?
                     if dst_pid in failed_nodes: continue
-                    # assert (dst_pid not in failed_nodes)
 
-                    dst_node = nodes.get(dst_pid)
-                    dst_dht = 'Bootstrap' if dst_node is None else nodes[dst_pid].get_dht().name
+                    dst_dht = nodes[dst_pid].get_dht().name
                     src_dht = node.get_dht()
-
-                    if dst_dht == 'Bootstrap':
-                        bootstraps.add(dst_pid)
-
                     snapshots.append(
                         (node.get_pid(), src_dht.name,  dst_pid, dst_dht, snap_nr, bucket_nr)
                     )
                 
+    storages = set()
     # list of (cid, src_pid, src_dht, queries_nr, time_ms, storage_node, storage_dht)
     publishes = []
     for node in nodes.values():
@@ -207,8 +204,11 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
         # print(f'node: {node.get_pid()}, dht: {node.get_dht().name}')
         # pp.pprint(pb_records)
         for rec in pb_records:
+            published.add(rec['cid'])
             # provs_info[]
-            if rec.get('store_nodes') == None: # we are dealing with a DEFAULT node
+            store_nodes = rec.get('store_nodes')
+            if len(store_nodes) == 0:
+                useless_cids.add(rec['cid'])
                 publishes.append((
                     rec['cid'], 
                     node.get_pid(), 
@@ -218,11 +218,8 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
                     None, None
                 ))
             else:
-                store_count = 0
                 for peer in rec['store_nodes']:
                     # my fault, I need to look a this
-                    if peer in bootstraps: continue
-                    store_count += 1
                     publishes.append((
                         rec['cid'], 
                         node.get_pid(), 
@@ -232,8 +229,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
                         peer_id, 
                         nodes[peer].get_dht().name
                     ))
-                if store_count == 0:
-                    useless_cids.add(rec['cid'])
+                    storages.add(peer)
                 # if store_count == 0:
                 #     print(f'node: {node.get_pid()}, dht: {node.get_dht().name}')
                 #     print(store_count)
@@ -259,6 +255,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
             c_type      = cids_type.get(cid)
             queries     = len(time_rec['queries'])
             # cid_type    = time_rec['type']
+            resolved.add(cid)
 
             # the node that was supposed to publish this CID failed
             if c_type == None:
@@ -269,9 +266,9 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 
             # Normal node CID that was published only on bootstrap nodes
             # which means it cannot be resolved so its useless
-            if cid in useless_cids: # TODO: discuss this with J. Leitao
-                # log.warn("Discaring useless CID record: %s", time_rec)
-                continue
+            # if cid in useless_cids: # TODO: discuss this with J. Leitao
+            #     # log.warn("Discaring useless CID record: %s", time_rec)
+            #     continue
 
 
             if c_type != DhtType.DEFAULT:
@@ -284,8 +281,13 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
                     c_type.name, lookup_time, providers, queries)
             )
 
+    # usesless_counts = {}
+    # for cid in useless_cids:
+    #     c_type = cids_type[cid]
+    #     count = usesless_counts.get(c_type, 0)
+    #     usesless_counts[c_type] = count + 1
 
-
+    # print(usesless_counts)
     # TODO: add info about lookups
     log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records, %d publish records, %d failed nodes, %d useless cids", len(nodes), len(cids_type), len(lookups), len(snapshots), len(publishes), len(failed_nodes), len(useless_cids))
     return pd.DataFrame(lookups, 
@@ -301,7 +303,8 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 def parse_args(args : list[str]) -> list[str]:
     # return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
     # return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(6) ]
-    return [ '../logs/ipfs-logs-12', '../logs/ipfs-logs-13' ]
+    # return [ '../logs/ipfs-logs-12', '../logs/ipfs-logs-13' ]
+    return [ '../logs/ipfs-logs-17' ]
 
 def main(args : list[str]):
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")

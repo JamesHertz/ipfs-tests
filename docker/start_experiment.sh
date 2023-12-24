@@ -40,9 +40,18 @@ function calc-sequence-number(){
     echo $total
 }
 
+function calc-bucket-size(){
+    if [ "$NODE_ROLE" = "bootstrap" ] ; then
+        echo $EXP_BOOT_BUCKET_SIZE
+    else
+        echo $EXP_WORKER_BUCKET_SIZE
+    fi
+}
+
 # init some variables c:
 export LOG_DIR=~/log
 export NODE_SEQ_NR=$(calc-sequence-number)
+export IPFS_BUCKET_SIZE=$(calc-bucket-size)
 
 # build dirs :
 # mkdir -p "$LOG_DIR $EXP_SHARED_DIR"
@@ -69,7 +78,7 @@ function save-logs(){
         NODE_ID=${NODE_SEQ_NR}
     fi
 
-    # FIXME: find a better solution
+    # FIXME: find a better solution (solve the problem with bash file c:)
     for file in ${LOG_DIR}/* ; do 
         echo "copying: $file to $EXP_LOG_DIR/$NODE_ID-$(basename "$file")"
         mv "$file" "$EXP_LOG_DIR/$NODE_ID-$(basename "$file")"

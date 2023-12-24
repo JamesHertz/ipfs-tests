@@ -131,7 +131,7 @@ def plot_cids_lookups(data: pd.DataFrame):
     plt.title('Number of CIDs lookups by DHT and CID type', fontweight='bold')
 
     # plt.show()
-    # save_fig('lookup-hist.pdf')
+    save_fig('lookup-hist.pdf')
 
 def calc_rt_evolution(snapshots: pd.DataFrame) -> pd.DataFrame:
     data = snapshots.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT, sp.EXP_ID])[sp.DST_DHT].value_counts().to_frame()
@@ -178,6 +178,16 @@ def calc_rt_evolution(snapshots: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_rt_evolution(snapshots: pd.DataFrame):
+    # bootstraps = [ 
+    #     "12D3KooWCRYS2G6j7kCLSX3duG6Lcq3XYaDxNKLDoW5R4LuQLTA6",
+    #     "12D3KooWK7EneSijABG6c7mYQmGqQp2VUpv7Pw891K6oAHiwHwrq",
+    #     "12D3KooWKdvURV1aGM8YxDktrTbhQX4iFThpK6HAy4iST2mGqhfb",
+    #     "12D3KooWSmjaw2ssaVRnoLmcMDWp7PSe1yXM6Z3LVoVnoKQ553p2"
+    # ]
+
+    # snapshots = snapshots[ 
+    #     snapshots[sp.SRC_PID].isin( bootstraps ) 
+    # ]
 
     def build_chart(data : pd.DataFrame, title: str, xlabel : str, ylabel : str):
         plt.ylim(0, 100)
@@ -366,7 +376,6 @@ def plot_publish_queries(data: pd.DataFrame):
     
 
 def plot_publish_nodes(data: pd.DataFrame):
-    data = data[ data[pb.SRC_DHT].isin(['Secure', 'Normal']) ]
     data = data.groupby([
         pb.EXP_ID, pb.SRC_PID, pb.SRC_DHT, pb.CID
     ])[pb.STORAGE_DHT].value_counts().to_frame('count')
@@ -379,7 +388,7 @@ def plot_publish_nodes(data: pd.DataFrame):
 
     ax = pivot.groupby(pb.SRC_DHT).mean().plot(
         kind='bar',
-        color=BARS_COLORS[2:],
+        color=BARS_COLORS[1:],
         figsize=(12, 6),
     )
 
@@ -402,12 +411,12 @@ def main():
     plot_avg_success_resolve(lookups)
     plot_success_rate(lookups)
     plot_avg_resolve_queries(lookups)
-    plot_cids_lookups(lookups)
+    # plot_cids_lookups(lookups)
 
     # TODO: do the number of queries in the publish and resolve
-    snapshots = read_data('snapshots.csv')
+    # snapshots = read_data('snapshots.csv')
     # plot_rt_evolution(snapshots)
-    plot_end_rt_state(snapshots)
+    # plot_end_rt_state(snapshots)
 
     publishes = read_data('publishes.csv')
     plot_publish_nodes(publishes)
