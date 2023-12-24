@@ -118,7 +118,7 @@ function main(){
     log "Starting experiments..."
 
     # start daemon
-    GOLOG_FILE="$LOG_DIR/provide.log" ipfs daemon >> "$LOG_DIR/peers.log" 2>&1 &
+    ipfs daemon >> "$LOG_DIR/peers.log" 2>&1 &
 
     log "Daemon started"
 
