@@ -64,6 +64,7 @@ services:
 networks:
   ipfs-network:
     driver: overlay
+    attachable: true
     ipam:
       config:
         - subnet: ${EXP_NETWORK_SUBNET?missing network subnet}
