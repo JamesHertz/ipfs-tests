@@ -110,17 +110,17 @@ def load_provides_record(prefix : str) -> list[FullProvideRecord]:
             )
             publish[res['cid']] = res
 
-    with open(f'{prefix}-provide.log') as file:
-        for line in file:
-            res =json.loads(
-                line.split('\t', maxsplit=4)[-1]
-            )
+    # with open(f'{prefix}-provide.log') as file:
+    #     for line in file:
+    #         res =json.loads(
+    #             line.split('\t', maxsplit=4)[-1]
+    #         )
 
-            # there are some others cids published on the DHT
-            # when the nodes starts, so I am ignoring them
-            if res['cid'] in publish:
-                value = publish[res['cid']]
-                value['store_nodes'] = res['peers']
+    #         # there are some others cids published on the DHT
+    #         # when the nodes starts, so I am ignoring them
+    #         if res['cid'] in publish:
+    #             value = publish[res['cid']]
+    #             value['store_nodes'] = res['peers']
             # res : ProvideRecord = json.loads(
             #     line.split(' ', maxsplit=2)[-1]
             # )
@@ -301,7 +301,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 def parse_args(args : list[str]) -> list[str]:
     # return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
     # return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(6) ]
-    return [ '../logs/ipfs-logs-8' ]
+    return [ '../logs/ipfs-logs-11' ]
 
 def main(args : list[str]):
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")

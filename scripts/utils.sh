@@ -70,7 +70,9 @@ DEFAULT_KUBO_SUFFIX="default"
 # [ <name>:libp2p@version , ... ]
 # NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.2" "normal:v0.21.1-normal-v1")
 # NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.5" "normal:v0.21.1-normal-v1.1")
-NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.6" "normal:v0.21.1-normal-v1.1")
+# NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v1.6" "normal:v0.21.1-normal-v1.1")
+NEW_KUBO_VERSIONS=("secure:v0.21.1-secure-v2" "normal:v0.21.1-normal-v1.2")
+DEFAULT_DHT_VERSION="v0.21.1-fix"
 
 # output binary
 KUBO_OUTPUT_BIN=cmd/ipfs/ipfs
@@ -137,7 +139,6 @@ function create-boot-file(){
     log "Creating boot file..."
     scripts/utils.py build
 }
-
 
 function convert-timestamp(){
     scripts/utils.py convert "$1"

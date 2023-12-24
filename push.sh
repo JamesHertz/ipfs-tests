@@ -5,7 +5,7 @@ set -e
 files="scripts/ docker/ config/ Makefile .env"
 case $1 in
     --build) 
-        GOARCH=amd64 ./scripts/build.sh --bin
+        GOARCH=amd64 ./scripts/script.sh build --bin
         files="$files bin/"
     ;;
 esac

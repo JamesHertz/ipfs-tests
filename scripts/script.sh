@@ -51,6 +51,9 @@ function build-binaries(){
     log "building kubo versions"
     # generate the default version 
     pushd "$KUBO_REPO" 
+
+        # for loggings purposes
+        switch-dht-depency "$DEFAULT_DHT_VERSION"
         build-kubo-bin "ipfs-$DEFAULT_KUBO_SUFFIX"
 
         new-dht-default-depencies
@@ -159,6 +162,25 @@ function abort(){
    exit 1
 }
 
+function get-logs () {
+
+    log "Stopping services...."
+    stop-all && sleep 60 # sleeping a bit
+
+    log "Getting logs..."
+    # decide the folder mane where the logs will be putted
+    ! [ -d "$OUT_LOGS" ] && mkdir "$OUT_LOGS"
+
+    local count=$(ls "$OUT_LOGS" | wc -l | xargs)
+
+    local dst_log_dir="$OUT_LOGS/ipfs-logs"
+    [ $count -gt 0 ] && dst_log_dir="$dst_log_dir-$count"
+
+    cp -r "$SHARED_LOG_DIR" "$dst_log_dir"
+
+    echo -e "\nLogs saved in: $dst_log_dir\n"
+}
+
 # run main function
 function run-experiment(){
     local compose_file=$1
@@ -178,6 +200,8 @@ function run-experiment(){
     export EXP_START_TIME=$((current_time+launch_seconds))
     echo -e "\nEXP_START_TIME=$EXP_START_TIME" >> "$IPFS_ENV_FILE"
 
+    echo "Start Time : $(date -d @$EXP_START_TIME)"
+
     log "Starting experiment..."
     docker stack deploy -c "$compose_file" "$STACK_NAME"
 
@@ -196,25 +220,6 @@ function run-experiment(){
 
     sleep "$wait_time" && get-logs
     echo -e "\nDone!!!\n"
-}
-
-function get-logs () {
-
-    log "Stopping services...."
-    stop-all && sleep 60 # sleeping a bit
-
-    log "Getting logs..."
-    # decide the folder mane where the logs will be putted
-    ! [ -d "$OUT_LOGS" ] && mkdir "$OUT_LOGS"
-
-    local count=$(ls "$OUT_LOGS" | wc -l | xargs)
-
-    local dst_log_dir="$OUT_LOGS/ipfs-logs"
-    [ $count -gt 0 ] && dst_log_dir="$dst_log_dir-$count"
-
-    cp -r "$SHARED_LOG_DIR" "$dst_log_dir"
-
-    echo -e "\nLogs saved in: $dst_log_dir\n"
 }
 
 # -----------------------
