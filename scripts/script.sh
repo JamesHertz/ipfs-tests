@@ -186,7 +186,7 @@ function run-experiment(){
     local compose_file=$1
     ! [ -f "$compose_file" ] && error "File '$compose_file' not found\n\n$USAGE"
 
-    make -s
+    make -s -f config.mk
 
     trap 'abort' ERR
     trap 'abort' SIGINT
