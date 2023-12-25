@@ -3,6 +3,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 # import utils as lk
+import math
 
 from utils import Lookups as lk
 from utils import Snapshots as sp 
@@ -11,9 +12,10 @@ from utils import Publishes as pb
 BARS_COLORS = ['C10', 'C9', 'C1', 'C2']
 
 
-def save_fig(filename: str):
+def save_fig(filename: str, fig : plt.Figure = None):
     # TODO: check if directory charts exists, if not created it :)
-    plt.savefig(f'charts/{filename}')
+    fig = fig if fig is not None else plt
+    fig.savefig(f'charts/{filename}')
     plt.clf()  # clear drawn charts for others :)
 
 
@@ -251,41 +253,80 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
         & (snapshots[sp.SRC_DHT].isin(['Secure', 'Normal']))
     ]
 
-    def built_chart(data: pd.DataFrame, title: str, filename: str = None):
+    def built_chart(data: pd.DataFrame, title: str, filename: str = None, ax : plt.Figure =None):
+        figsize = (12, 6) if ax is None else None
+
         ax = data.plot(
             kind='bar',
-            figsize=(12, 6),
-            color=[BARS_COLORS[2], BARS_COLORS[3]]
+            figsize=figsize,
+            color=[BARS_COLORS[2], BARS_COLORS[3]],
+            ax=ax
         )
 
         for cnt in ax.containers:
             ax.bar_label(cnt, labels=[f"{round(v, 2)} %" if v > 0.0 else '' for v in cnt.datavalues])
 
-        plt.xticks(rotation=0, horizontalalignment="center")
-        plt.title(title, fontweight='bold')
-        plt.title('Percentage of nodes of each DHT version known by each', fontweight='bold')
-        plt.xlabel('DHT version', fontweight='bold')
-        plt.ylabel('percentage of the nodes in DHT', fontweight='bold')
-        plt.legend(title='CID types')
+
+        ax.set_xlabel('DHT version', fontweight='bold')
+        ax.set_ylabel('percentage of the nodes in DHT', fontweight='bold')
+        ax.legend(title='CID types')
+        ax.set_title(title, fontweight='bold')
+
+        labels = [item.get_text() for item in ax.get_xticklabels()]
+        ticks  = range(len(labels))
+        ax.set_xticks(
+           ticks,
+           labels=labels, 
+           rotation=0, 
+           horizontalalignment="center"
+        )
+
+        # plt.xticks(rotation=0, horizontalalignment="center")
+        # plt.title(title, fontweight='bold')
+        # plt.title('Percentage of nodes of each DHT version known by each', fontweight='bold')
+        # plt.xlabel('DHT version', fontweight='bold')
+        # plt.ylabel('percentage of the nodes in DHT', fontweight='bold')
+        # plt.legend(title='CID types')
         if filename is not None:
             save_fig(filename)
 
-    data = calc_rt_state(snapshots)
-    built_chart(data, 'Percentage of nodes neibours in the Routing table', 'rt-end-state.pdf')
+    all_buckets = snapshots[sp.BUCKET_NR].unique()
+    rows = 2
+    cols = int(math.floor( 
+        # (len(all_buckets) + 1)/ 2
+        len(all_buckets) / rows
+    ))
 
-    # buckets = snapshots[sp.BUCKET_NR].unique()
-    for bucket in snapshots[sp.BUCKET_NR].unique():
-    # for i, bucket in enumerate(buckets):
-        # plt.subplot(1, len(buckets), i + 1)
-        # print("i=", i)
+    # data = calc_rt_state(snapshots)
+    # built_chart(data, 'Percentage of nodes neibours in the Routing table', 'rt-end-state.pdf')
+
+    fig, axes = plt.subplots(nrows=2, ncols=cols, figsize=(30, 10))
+
+    # data = calc_rt_state(snapshots)
+    # built_chart(
+    #     data, 
+    #     'Percentage of nodes neibours in the Routing table', 
+    #     'over-all-end-state.pdf'
+    # )
+
+    # for bucket in snapshots[sp.BUCKET_NR].unique():
+    # for bucket in all_buckets:
+    plt.figure(figsize=(16, 8)) 
+    for i, bucket in enumerate(all_buckets):
+        col = i % cols
+        row = i // cols
+        # print(row, col)
         aux = snapshots[snapshots[sp.BUCKET_NR] == bucket]
         data = calc_rt_state(aux)
         built_chart(
             data, 
             f'Percentage of nodes neibours in the bucket {bucket}', 
-            f'rt-end-state-bucket-{bucket}.pdf'
+            # f'rt-end-state-bucket-{bucket}.pdf',
+            ax=axes[row, col]
         )
-    # save_fig('rt-end-state-by-bucket.pdf')
+
+    # fig.subplots_adjust(hspace=0.3)
+    save_fig('rt-end-state.pdf', fig=fig)
 
 
 def plot_avg_resolve_queries(data: pd.DataFrame):
@@ -411,12 +452,12 @@ def main():
     plot_avg_success_resolve(lookups)
     plot_success_rate(lookups)
     plot_avg_resolve_queries(lookups)
-    # plot_cids_lookups(lookups)
+    plot_cids_lookups(lookups)
 
     # TODO: do the number of queries in the publish and resolve
-    # snapshots = read_data('snapshots.csv')
+    snapshots = read_data('snapshots.csv')
     # plot_rt_evolution(snapshots)
-    # plot_end_rt_state(snapshots)
+    plot_end_rt_state(snapshots)
 
     publishes = read_data('publishes.csv')
     plot_publish_nodes(publishes)
