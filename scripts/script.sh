@@ -281,9 +281,6 @@ function run-setup(){
         '')
             error "missing setup option\n\n$USAGE"
         ;;
-        *)
-            error "unknown setup option: $1\n\n$USAGE"
-        ;;
     esac
 }
 
@@ -296,10 +293,13 @@ function run-init(){
         --repos)
             gen-repos
         ;;
-        *)
+        '')
             log "Generating cids and repos..."
             gen-cids
             gen-repos
+        ;;
+        *)
+            error "unknown setup option: $1\n\n$USAGE"
         ;;
     esac
 }

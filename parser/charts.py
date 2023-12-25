@@ -291,7 +291,7 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
             save_fig(filename)
 
     all_buckets = snapshots[sp.BUCKET_NR].unique()
-    rows = 2
+    rows = 3
     cols = int(math.floor( 
         # (len(all_buckets) + 1)/ 2
         len(all_buckets) / rows
@@ -300,14 +300,14 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
     # data = calc_rt_state(snapshots)
     # built_chart(data, 'Percentage of nodes neibours in the Routing table', 'rt-end-state.pdf')
 
-    fig, axes = plt.subplots(nrows=2, ncols=cols, figsize=(30, 10))
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(25, 20))
 
-    # data = calc_rt_state(snapshots)
-    # built_chart(
-    #     data, 
-    #     'Percentage of nodes neibours in the Routing table', 
-    #     'over-all-end-state.pdf'
-    # )
+    data = calc_rt_state(snapshots)
+    built_chart(
+        data, 
+        'Percentage of nodes neibours in the Routing table', 
+        'over-all-end-state.pdf'
+    )
 
     # for bucket in snapshots[sp.BUCKET_NR].unique():
     # for bucket in all_buckets:
@@ -315,12 +315,11 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
     for i, bucket in enumerate(all_buckets):
         col = i % cols
         row = i // cols
-        # print(row, col)
         aux = snapshots[snapshots[sp.BUCKET_NR] == bucket]
         data = calc_rt_state(aux)
         built_chart(
             data, 
-            f'Percentage of nodes neibours in the bucket {bucket}', 
+            f'Percentage of nodes neighbours in the bucket {bucket}', 
             # f'rt-end-state-bucket-{bucket}.pdf',
             ax=axes[row, col]
         )
@@ -345,7 +344,7 @@ def plot_avg_resolve_queries(data: pd.DataFrame):
     )
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[f"{int(round(v, 0))}" if v > 0.0 else '' for v in cnt.datavalues])
+        ax.bar_label(cnt, labels=[f"{round(v, 1)}" if v > 0.0 else '' for v in cnt.datavalues])
 
     # print(pivot_data)
 
@@ -448,21 +447,21 @@ def plot_publish_nodes(data: pd.DataFrame):
 # TODO:
 # remove all the duplication of the code
 def main():
-    lookups = read_data('lookups.csv')
-    plot_avg_success_resolve(lookups)
-    plot_success_rate(lookups)
-    plot_avg_resolve_queries(lookups)
-    plot_cids_lookups(lookups)
+    # lookups = read_data('lookups.csv')
+    # plot_avg_success_resolve(lookups)
+    # plot_success_rate(lookups)
+    # plot_avg_resolve_queries(lookups)
+    # plot_cids_lookups(lookups)
 
     # TODO: do the number of queries in the publish and resolve
     snapshots = read_data('snapshots.csv')
     # plot_rt_evolution(snapshots)
     plot_end_rt_state(snapshots)
 
-    publishes = read_data('publishes.csv')
-    plot_publish_nodes(publishes)
-    plot_puslibh_time(publishes)
-    plot_publish_queries(publishes)
+    # publishes = read_data('publishes.csv')
+    # plot_publish_nodes(publishes)
+    # plot_puslibh_time(publishes)
+    # plot_publish_queries(publishes)
 
 # TODO: charts by bucket and by experiment
 # charts ideas:
