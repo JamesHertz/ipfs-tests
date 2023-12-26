@@ -5,7 +5,3 @@
 	path = repos/kubo-ipfs
 	url = https://github.com/JamesHertz/kubo.git
 	branch = experiments
-[submodule "repos/root-node"]
-	path = repos/boot-nodes
-	url = https://github.com/JamesHertz/kubo.git
-	branch = boot-node
