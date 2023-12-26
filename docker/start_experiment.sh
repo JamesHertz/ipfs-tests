@@ -58,7 +58,7 @@ export IPFS_BUCKET_SIZE=$(calc-bucket-size)
 mkdir -p $LOG_DIR
 
 # setup logs 
-exec 2>&1 > "$LOG_DIR/$NODE_SEQ_NR-bash.log"
+exec  > "$LOG_DIR/$NODE_SEQ_NR-bash.log" 2>&1
 setup-ipfs-alias  
 
 

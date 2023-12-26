@@ -19,30 +19,6 @@ x-base-service: &base-service
 
 version: "3"
 services:
-  normal-nodes:
-    <<: *base-service
-    environment:
-      - NODE_MODE=normal
-      - NODE_ROLE=worker
-    deploy:
-      <<: *deploy-cfg
-      replicas: ${EXP_NORMAL_NODES:?Missing number of normal worker nodes}
-    depends_on:
-      - secure-bootrap-nodes
-      - normal-bootrap-nodes
-
-  secure-nodes:
-    <<: *base-service
-    environment:
-      - NODE_MODE=secure
-      - NODE_ROLE=worker
-    deploy:
-      <<: *deploy-cfg
-      replicas: ${EXP_SECURE_NODES:?Missing number of secure worker nodes}
-    depends_on:
-      - secure-bootrap-nodes
-      - normal-bootrap-nodes
-
   normal-bootrap-nodes:
     <<: *base-service
     environment:
@@ -60,6 +36,31 @@ services:
     deploy:
       <<: *deploy-cfg
       replicas: ${EXP_SECURE_BOOT_NODES:?Missing number of secure bootstrap nodes}
+
+  normal-nodes:
+    <<: *base-service
+    environment:
+      - NODE_MODE=normal
+      - NODE_ROLE=worker
+    deploy:
+      <<: *deploy-cfg
+      replicas: ${EXP_NORMAL_NODES:?Missing number of normal worker nodes}
+    # depends_on:
+    #   - secure-bootrap-nodes
+    #   - normal-bootrap-nodes
+
+  secure-nodes:
+    <<: *base-service
+    environment:
+      - NODE_MODE=secure
+      - NODE_ROLE=worker
+    deploy:
+      <<: *deploy-cfg
+      replicas: ${EXP_SECURE_NODES:?Missing number of secure worker nodes}
+    # depends_on:
+    #   - secure-bootrap-nodes
+    #   - normal-bootrap-nodes
+
   
 networks:
   ipfs-network:

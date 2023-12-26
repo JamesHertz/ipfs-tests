@@ -447,21 +447,21 @@ def plot_publish_nodes(data: pd.DataFrame):
 # TODO:
 # remove all the duplication of the code
 def main():
-    # lookups = read_data('lookups.csv')
-    # plot_avg_success_resolve(lookups)
-    # plot_success_rate(lookups)
-    # plot_avg_resolve_queries(lookups)
+    lookups = read_data('lookups.csv')
+    plot_avg_success_resolve(lookups)
+    plot_success_rate(lookups)
+    plot_avg_resolve_queries(lookups)
     # plot_cids_lookups(lookups)
 
     # TODO: do the number of queries in the publish and resolve
-    snapshots = read_data('snapshots.csv')
+    # snapshots = read_data('snapshots.csv')
     # plot_rt_evolution(snapshots)
-    plot_end_rt_state(snapshots)
+    # plot_end_rt_state(snapshots)
 
-    # publishes = read_data('publishes.csv')
-    # plot_publish_nodes(publishes)
-    # plot_puslibh_time(publishes)
-    # plot_publish_queries(publishes)
+    publishes = read_data('publishes.csv')
+    plot_publish_nodes(publishes)
+    plot_puslibh_time(publishes)
+    plot_publish_queries(publishes)
 
 # TODO: charts by bucket and by experiment
 # charts ideas:

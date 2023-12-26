@@ -210,7 +210,8 @@ function run-experiment(){
     sleep 60  && create-boot-file
 
     local duration_seconds=$(convert-timestamp "$EXP_DURATION")
-    local end_time=$((EXP_START_TIME+duration_seconds))
+    local extra_seconds=$(convert-timestamp "$EXP_EXTRA_TIME")
+    local end_time=$((EXP_START_TIME+duration_seconds+extra_seconds))
 
     # recalculate current time c:
     local current_time=$(date +%s)

@@ -20,17 +20,6 @@ x-base-service: &base-service
       - ${SHARED_DIR}:${EXP_SHARED_DIR}
 
 services:
-  default-nodes:
-    <<: *base-service
-    environment:
-      - NODE_MODE=default
-      - NODE_ROLE=worker
-    deploy:
-      <<: *deploy-cfg
-      replicas: ${EXP_TOTAL_WORKER_NODES:?Missing number of worker nodes}
-    depends_on:
-      - bootrap-nodes
-
   bootrap-nodes:
     <<: *base-service
     environment:
@@ -39,6 +28,18 @@ services:
     deploy:
       <<: *deploy-cfg
       replicas: ${EXP_TOTAL_BOOT_NODES:?Missing number of bootstrap nodes}
+
+  default-nodes:
+    <<: *base-service
+    environment:
+      - NODE_MODE=default
+      - NODE_ROLE=worker
+    deploy:
+      <<: *deploy-cfg
+      replicas: ${EXP_TOTAL_WORKER_NODES:?Missing number of worker nodes}
+    # depends_on:
+    #   - bootrap-nodes
+
   
 networks:
   ipfs-network:
