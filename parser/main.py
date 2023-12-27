@@ -300,26 +300,31 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 
 
 # TODO: change this thing :)
-def parse_args(args : list[str]) -> list[str]:
-    # return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
-    # return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(6) ]
-    # return [ '../logs/ipfs-logs-12', '../logs/ipfs-logs-13' ]
-    # return [ '../logs/ipfs-logs-22', '../logs/ipfs-logs-24' ]
-    return [ '../logs/ipfs-logs-25' ]
+# def parse_args(args : list[str]) -> list[str]:
+#     # return ['../logs/ipfs-logs', '../logs/ipfs-logs-2', '../logs/ipfs-logs-3']
+#     # return ['../logs/ipfs-logs' if i == 0 else f'../logs/ipfs-logs-{i}' for i in range(6) ]
+#     # return [ '../logs/ipfs-logs-12', '../logs/ipfs-logs-13' ]
+#     # return [ '../logs/ipfs-logs-22', '../logs/ipfs-logs-24' ]
+#     # return [ '../logs/ipfs-logs-25', '../logs/ipfs-logs-26' ]
+#     # return [f'../logs/ipfs-logs-{i}' for i in range(33, 39) ]
+#     return []
 
 def main(args : list[str]):
-    log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
 
-    # pp.pprint(
-    #     load_provides_record('../logs/ipfs-logs/12D3KooW9pYxtNDHn6JdssZAhVrGyJ54u2WX6CCZxRYDCXibHzze')
-    # )
-    # print(
-    # )
+    if len(args) < 2:
+        print("Error no file provided")
+        print(f"usage: {args[0]} filename...")
+        sys.exit(1)
+
+    # files = parse_files(args[1:])
+    files = args[1:]
+
+    log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
 
     lookups   = []
     snapshots = []
     publishes = []
-    for exp_id, experiment in enumerate(parse_args(args)):
+    for exp_id, experiment in enumerate(files):
         lkups, snap, psh= parse_files(experiment)
 
         # set up experiment ids

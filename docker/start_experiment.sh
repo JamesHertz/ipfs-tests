@@ -48,8 +48,21 @@ function calc-bucket-size(){
     fi
 }
 
+function calc-total-nodes(){
+    local boot_nodes=$EXP_TOTAL_BOOT_NODES
+    local worker_nodes=$EXP_TOTAL_WORKER_NODES
+
+    if [ "$NODE_MODE" != "default" ] ; then
+        boot_nodes=((EXP_NORMAL_BOOT_NODES+EXP_SECURE_BOOT_NODES))
+        worker_nodes=((EXP_NORMAL_NODES+EXP_SECURE_NODES))
+    fi
+
+    echo ((boot_nodes+worker_nodes))
+}
+
 # init some variables c:
 export LOG_DIR=~/log
+export EXP_TOTAL_NODES=$(calc-total-nodes)
 export NODE_SEQ_NR=$(calc-sequence-number)
 export IPFS_BUCKET_SIZE=$(calc-bucket-size)
 
@@ -100,8 +113,8 @@ function setup-ipfs-repo(){
     ipfs config Discovery.MDNS.Enabled --bool false 
 
     # reduce resource consuntion
-    ipfs config Swarm.ConnMgr.LowWater --json 20
-    ipfs config Swarm.ConnMgr.HighWater --json 50
+    ipfs config Swarm.ConnMgr.LowWater --json 30
+    ipfs config Swarm.ConnMgr.HighWater --json 80
 
     # grade period
     ipfs config Swarm.ConnMgr.GracePeriod 60s

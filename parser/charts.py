@@ -3,6 +3,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 # import utils as lk
+import seaborn as sns
 import math
 
 from utils import Lookups as lk
@@ -135,28 +136,9 @@ def plot_cids_lookups(data: pd.DataFrame):
     # plt.show()
     save_fig('lookup-hist.pdf')
 
-def calc_rt_evolution(snapshots: pd.DataFrame) -> pd.DataFrame:
+def calc_rt_evolution(snapshots: pd.DataFrame, fig : plt.Figure = None) -> pd.DataFrame:
     data = snapshots.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT, sp.EXP_ID])[sp.DST_DHT].value_counts().to_frame()
     # print(data)
-
-    # Some nodes dies during the experiment, for motives I have no control of # those that die right at 
-    # the begining of the experiment are remove from the data when generating the csv but those that die 
-    # during hte experiment are not so I ran this to notice how many did so. (in order to see if their 
-    # data would statistically ruin the results). 
-    #
-    # +-----------------------------------------------------------+
-    # | The results I got were (format: exp-id => died/didn't):   |
-    # |   - 0 => 1/599                                            |
-    # |   - 1 => 1/600                                            |
-    # |   - 2 => 1/597                                            |
-    # +-----------------------------------------------------------+
-    #
-    # max_snap = snapshots[sp.SNAPSHOT_NR].max()
-    # for exp_id in range(3):
-    #     filtered = snapshots[ snapshots[sp.EXP_ID] == exp_id ]
-    #     aux = filtered.groupby(sp.SRC_PID)[sp.SNAPSHOT_NR].max().to_frame()
-    #     print(aux.columns)
-    #     print(f'exp: {exp_id}; mad-node/total-nodes: {len(aux[aux[sp.SNAPSHOT_NR] != max_snap])}/{len(aux)}')
 
     # get each type as a row
     data.reset_index(level=(sp.DST_DHT), inplace=True)
@@ -171,55 +153,67 @@ def calc_rt_evolution(snapshots: pd.DataFrame) -> pd.DataFrame:
     pivot_data = pivot_data.groupby(sp.SNAPSHOT_NR).mean()
     # print(pivot_data)
 
+    fig = fig if fig is not None else plt
     for dht_type in pivot_data.columns:
         aux = pivot_data[dht_type]
         if len(aux) > 0 :
-            plt.plot(pivot_data.index, aux, label=dht_type)
+            fig.plot(pivot_data.index, aux, label=dht_type)
 
     return pivot_data
 
 
 def plot_rt_evolution(snapshots: pd.DataFrame):
-    # bootstraps = [ 
-    #     "12D3KooWCRYS2G6j7kCLSX3duG6Lcq3XYaDxNKLDoW5R4LuQLTA6",
-    #     "12D3KooWK7EneSijABG6c7mYQmGqQp2VUpv7Pw891K6oAHiwHwrq",
-    #     "12D3KooWKdvURV1aGM8YxDktrTbhQX4iFThpK6HAy4iST2mGqhfb",
-    #     "12D3KooWSmjaw2ssaVRnoLmcMDWp7PSe1yXM6Z3LVoVnoKQ553p2"
-    # ]
-
-    # snapshots = snapshots[ 
-    #     snapshots[sp.SRC_PID].isin( bootstraps ) 
-    # ]
-
-    def build_chart(data : pd.DataFrame, title: str, xlabel : str, ylabel : str):
-        plt.ylim(0, 100)
-        plt.xlim(0, data.index.max()) # 0 to max snapshot-number
-        plt.legend()
-
-        plt.title(title)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
 
     for node_type in ['Secure', 'Normal']:
         snaps    = snapshots[snapshots[sp.SRC_DHT] == node_type]
-        dht_evol = calc_rt_evolution(snaps)
-        build_chart(
-            dht_evol,
-            f'Evolution of the routing table of {node_type} Nodes',
-            'Time (minutes) from the start of the experiment',
-            'Percentage (%) of nodes in the routing table'
+        print(node_type)
+
+        buckets = snaps[sp.BUCKET_NR].unique()
+
+        cols = 3
+        rows = int(math.ceil(
+            (len(buckets) + 1)/ cols
+        ))
+
+        fig, axes = plt.subplots(
+            nrows=rows, ncols=cols, figsize=(25,20), layout='constrained', sharey=True
         )
-        save_fig(f'{node_type}-rt-end.pdf')
 
-        for bucket in snaps[sp.BUCKET_NR].unique():
-            build_chart(
-                calc_rt_evolution(snaps[ snaps[sp.BUCKET_NR] == bucket ]),
-                f'Evolution of the bucket {bucket} of {node_type} Nodes',
-                'Time (minutes) from the start of the experiment',
-                'Percentage (%) of nodes in the bucket'
-            )
+        over_all = axes[0, 0]
+        dht_evol = calc_rt_evolution(snaps, over_all)
 
-            save_fig(f'{node_type}-rt-evol-bucket-{bucket}.pdf')
+        over_all.set_title(f'Whole Routing Table', fontweight='bold')
+        over_all.set_ylim(0, 100)
+        over_all.set_xlim(0, dht_evol.index.max()) # 0 to max snapshot-number
+        over_all.legend(fontsize=12)
+
+        fig.suptitle(
+            'Routing table evoluation for Secure Nodes', fontweight='bold', fontsize=20
+        )
+
+        fig.supxlabel(
+            'Time (minutes) from the start of the experiment', fontweight='bold', fontsize=16
+        )
+
+        fig.supylabel(
+            'Percentage (%) of nodes in the bucket', fontweight='bold', fontsize=16
+        )
+
+        for bucket in buckets:
+            row = (bucket + 1) // cols
+            col = (bucket + 1) % cols
+
+            ax   = axes[row, col]
+            data = calc_rt_evolution(snaps[ snaps[sp.BUCKET_NR] == bucket ], fig=ax)
+
+            # ...
+            ax.set_title(f'Bucket {bucket}', fontweight='bold')
+            ax.set_ylim(0, 100)
+            ax.set_xlim(0, data.index.max()) # 0 to max snapshot-number
+            ax.legend(fontsize=12)
+
+        # save_fig(f'{node_type}-rt-evol-bucket-{bucket}.pdf')
+        save_fig(f'{node_type}-rt-buckets-evol.pdf', fig=fig)
 
 
 
@@ -249,16 +243,16 @@ def calc_rt_state(snapshots: pd.DataFrame) -> pd.DataFrame:
 def plot_end_rt_state(snapshots: pd.DataFrame):
     last_snap = snapshots[sp.SNAPSHOT_NR].unique().max()
     snapshots = snapshots[ 
-          (snapshots[sp.SNAPSHOT_NR] == last_snap) 
+          (snapshots[sp.SNAPSHOT_NR] == last_snap - 1) 
         & (snapshots[sp.SRC_DHT].isin(['Secure', 'Normal']))
     ]
 
-    def built_chart(data: pd.DataFrame, title: str, filename: str = None, ax : plt.Figure =None):
-        figsize = (12, 6) if ax is None else None
-
+    def built_chart(data: pd.DataFrame, title: str, ax : plt.Figure):
+        # sns.heatmap(
+        #     data, annot=True, cmap='Blues', ax=ax, fmt='.2f', annot_kws={"fontsize": 10}
+        # )
         ax = data.plot(
             kind='bar',
-            figsize=figsize,
             color=[BARS_COLORS[2], BARS_COLORS[3]],
             ax=ax
         )
@@ -267,9 +261,10 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
             ax.bar_label(cnt, labels=[f"{round(v, 2)} %" if v > 0.0 else '' for v in cnt.datavalues])
 
 
-        ax.set_xlabel('DHT version', fontweight='bold')
-        ax.set_ylabel('percentage of the nodes in DHT', fontweight='bold')
-        ax.legend(title='CID types')
+        ax.set_xlabel(None)
+        # ax.set_ylabel(None)
+        # # ax.set_ylabel('percentage of the nodes in DHT', fontweight='bold')
+        ax.legend(title="DHT version")
         ax.set_title(title, fontweight='bold')
 
         labels = [item.get_text() for item in ax.get_xticklabels()]
@@ -281,50 +276,56 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
            horizontalalignment="center"
         )
 
-        # plt.xticks(rotation=0, horizontalalignment="center")
-        # plt.title(title, fontweight='bold')
-        # plt.title('Percentage of nodes of each DHT version known by each', fontweight='bold')
-        # plt.xlabel('DHT version', fontweight='bold')
-        # plt.ylabel('percentage of the nodes in DHT', fontweight='bold')
-        # plt.legend(title='CID types')
-        if filename is not None:
-            save_fig(filename)
-
     all_buckets = snapshots[sp.BUCKET_NR].unique()
     rows = 3
-    cols = int(math.floor( 
+    cols = int(math.ceil( 
         # (len(all_buckets) + 1)/ 2
-        len(all_buckets) / rows
+        ( len(all_buckets) + 1) / rows
     ))
 
     # data = calc_rt_state(snapshots)
     # built_chart(data, 'Percentage of nodes neibours in the Routing table', 'rt-end-state.pdf')
+    fig, axes = plt.subplots(
+        nrows=rows, ncols=cols, figsize=(25, 20), layout='constrained'
+    )
 
-    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(25, 20))
+    fig.suptitle(
+        'Routing table end state for Secure and Normal Nodes', fontweight='bold', fontsize=20
+    )
+
+    fig.supxlabel(
+        'DHT version', fontweight='bold', fontsize=16
+    )
+
+    fig.supylabel(
+        'Percentage (%) of nodes in the routing table', fontweight='bold', fontsize=16
+    )
 
     data = calc_rt_state(snapshots)
     built_chart(
         data, 
-        'Percentage of nodes neibours in the Routing table', 
-        'over-all-end-state.pdf'
+        'Whole Routing Table', 
+        axes[0, 0]
     )
 
     # for bucket in snapshots[sp.BUCKET_NR].unique():
-    # for bucket in all_buckets:
-    plt.figure(figsize=(16, 8)) 
-    for i, bucket in enumerate(all_buckets):
-        col = i % cols
-        row = i // cols
-        aux = snapshots[snapshots[sp.BUCKET_NR] == bucket]
-        data = calc_rt_state(aux)
+    for bucket in all_buckets:
+        col = (bucket + 1) % cols
+        row = (bucket + 1) // cols
+
+        snaps = snapshots[snapshots[sp.BUCKET_NR] == bucket]
+        data  = calc_rt_state(snaps)
         built_chart(
             data, 
-            f'Percentage of nodes neighbours in the bucket {bucket}', 
-            # f'rt-end-state-bucket-{bucket}.pdf',
+            f'Bucket {bucket}', 
             ax=axes[row, col]
         )
 
-    # fig.subplots_adjust(hspace=0.3)
+    # TODO: uncomment when needed
+    # blank_spots = cols * rows - len(all_buckets)
+    # if blank_spots > 0:
+    #     for i in range(blank_spots):
+    #         axes[ rows - 1, cols - (1 + i)].axis('off')
     save_fig('rt-end-state.pdf', fig=fig)
 
 
@@ -350,7 +351,7 @@ def plot_avg_resolve_queries(data: pd.DataFrame):
 
     plt.xticks(rotation=0, horizontalalignment="center")
     plt.xlabel('DHT version', fontweight='bold')
-    plt.legend(title='CID Types')
+    plt.legend(title='CID Types', loc='lower right')
     plt.ylabel('Number of queries', fontweight='bold')
     plt.title('Average number of queries per resolved CID type', fontweight='bold')
     # plt.show()
@@ -447,21 +448,21 @@ def plot_publish_nodes(data: pd.DataFrame):
 # TODO:
 # remove all the duplication of the code
 def main():
-    lookups = read_data('lookups.csv')
-    plot_avg_success_resolve(lookups)
-    plot_success_rate(lookups)
-    plot_avg_resolve_queries(lookups)
+    # lookups = read_data('lookups.csv')
+    # plot_avg_success_resolve(lookups)
+    # plot_success_rate(lookups)
+    # plot_avg_resolve_queries(lookups)
     # plot_cids_lookups(lookups)
 
     # TODO: do the number of queries in the publish and resolve
-    # snapshots = read_data('snapshots.csv')
+    snapshots = read_data('snapshots.csv')
     # plot_rt_evolution(snapshots)
-    # plot_end_rt_state(snapshots)
+    plot_end_rt_state(snapshots)
 
-    publishes = read_data('publishes.csv')
-    plot_publish_nodes(publishes)
-    plot_puslibh_time(publishes)
-    plot_publish_queries(publishes)
+    # publishes = read_data('publishes.csv')
+    # plot_publish_nodes(publishes)
+    # plot_puslibh_time(publishes)
+    # plot_publish_queries(publishes)
 
 # TODO: charts by bucket and by experiment
 # charts ideas:
