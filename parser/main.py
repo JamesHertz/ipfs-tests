@@ -313,7 +313,7 @@ def main(args : list[str]):
 
     if len(args) < 2:
         print("Error no file provided")
-        print(f"usage: {args[0]} filename...")
+        print(f"usage: {args[0]} directory...")
         sys.exit(1)
 
     # files = parse_files(args[1:])
