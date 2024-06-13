@@ -3,27 +3,47 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 # import utils as lk
-import seaborn as sns
+# import seaborn as sns
+import numpy as np
+
 import math
+import sys
 
 from utils import Lookups as lk
 from utils import Snapshots as sp 
 from utils import Publishes as pb
+from typing import cast, Callable
+from igraph import Graph
+from os import path, mkdir
 
-BARS_COLORS = ['C10', 'C9', 'C1', 'C2']
+type ExpGraphs = dict[str, list[list[Graph]]]
 
+BARS_COLORS     = ['C10', 'C9', 'C1', 'C2']
+CHARTS_SAVE_DIR = 'charts'
 
-def save_fig(filename: str, fig : plt.Figure = None):
+def __init__():
+    if not path.exists(CHARTS_SAVE_DIR):
+        print(f"creating directory '{CHARTS_SAVE_DIR}/'")
+        mkdir(CHARTS_SAVE_DIR)
+    elif not path.isdir(CHARTS_SAVE_DIR):
+        print(
+            f"File '{CHARTS_SAVE_DIR}' is not a directory. Either change CHARTS_SAVE_DIR or remove it."
+        )
+        sys.exit(1)
+
+def save_fig(filename: str, fig : plt.Figure = None): # type: ignore
     # TODO: check if directory charts exists, if not created it :)
-    fig = fig if fig is not None else plt
-    fig.savefig(f'charts/{filename}')
-    plt.clf()  # clear drawn charts for others :)
+    fig = fig if fig is not None else plt  # type: ignore
+    filename = f'charts/{filename}'
+    print(f"Saving '{filename}'")
+    fig.savefig(filename)
+    plt.clf()  # clear drawn charts for others :) # TODO: get rid of this thing c:
 
 
 def plot_avg_success_resolve(data: pd.DataFrame):
-    data = data[data[lk.PROVIDERS] > 0]
+    data = data[data[lk.PROVIDERS] > 0] # type: ignore
 
-    data = data.groupby([lk.PEER_DHT, lk.CID_TYPE])[lk.LOOKUP_TIME].agg(resolve_time='mean')
+    data = data.groupby([lk.PEER_DHT, lk.CID_TYPE])[lk.LOOKUP_TIME].agg(resolve_time='mean') # type: ignore
 
     # print(data)
     data.reset_index(level=(lk.CID_TYPE,), inplace=True)
@@ -51,7 +71,7 @@ def plot_success_rate(data: pd.DataFrame):
 
     data = data.groupby([lk.PEER_DHT, lk.CID_TYPE])[lk.PROVIDERS].aggregate(
         ['sum', 'count']
-    )
+    ) # type: ignore
     data.reset_index(level=(lk.CID_TYPE,), inplace=True)
 
     data['success rate'] = data['sum'] / data['count'] * 100
@@ -86,11 +106,11 @@ def plot_cids_lookups(data: pd.DataFrame):
     # TODO: think on a way to solve the colors incovinience
     # total_resolves = len(data)
     # print(total_resolves)
-    print('-----------------------')
-    print(data)
+    # print('-----------------------')
+    # print(data)
     data = data.groupby(lk.PEER_DHT)[lk.CID_TYPE].value_counts().to_frame()
-    print('-----------------------')
-    print(data)
+    # print('-----------------------')
+    # print(data)
     data.reset_index(level=(lk.CID_TYPE,), inplace=True)
 
     pivot_data = data.pivot(columns=lk.CID_TYPE, values='count').fillna(0)
@@ -98,8 +118,8 @@ def plot_cids_lookups(data: pd.DataFrame):
     # for col in pivot_data:
     #     pivot_data[col] = (100 * pivot_data[col] / total_resolves) 
 
-    print('-----------------------')
-    print(pivot_data)
+    # print('-----------------------')
+    # print(pivot_data)
     __before = pivot_data['Normal']
 
     pivot_data['Normal'] = pivot_data['Secure'] + pivot_data['Normal']
@@ -166,7 +186,7 @@ def plot_rt_evolution(snapshots: pd.DataFrame):
 
     for node_type in ['Secure', 'Normal']:
         snaps    = snapshots[snapshots[sp.SRC_DHT] == node_type]
-        print(node_type)
+        # print(node_type)
 
         buckets = snaps[sp.BUCKET_NR].unique()
 
@@ -265,16 +285,16 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
         # ax.set_ylabel(None)
         # # ax.set_ylabel('percentage of the nodes in DHT', fontweight='bold')
         ax.legend(title="DHT version")
-        ax.set_title(title, fontweight='bold')
+        ax.set_title(title, fontweight='bold') # type: ignore
 
-        labels = [item.get_text() for item in ax.get_xticklabels()]
+        labels = [item.get_text() for item in ax.get_xticklabels()] # type: ignore
         ticks  = range(len(labels))
-        ax.set_xticks(
+        ax.set_xticks( # type: ignore
            ticks,
            labels=labels, 
            rotation=0, 
            horizontalalignment="center"
-        )
+        ) 
 
     all_buckets = snapshots[sp.BUCKET_NR].unique()
     rows = 3
@@ -314,7 +334,7 @@ def plot_end_rt_state(snapshots: pd.DataFrame):
         row = (bucket + 1) // cols
 
         snaps = snapshots[snapshots[sp.BUCKET_NR] == bucket]
-        data  = calc_rt_state(snaps)
+        data  = calc_rt_state(snaps) # type: ignore
         built_chart(
             data, 
             f'Bucket {bucket}', 
@@ -357,28 +377,10 @@ def plot_avg_resolve_queries(data: pd.DataFrame):
     # plt.show()
     save_fig('avg-res-queries.pdf')
 
-
-
-def read_data(filename : str) -> pd.DataFrame:
-    data = pd.read_csv(filename, low_memory=False)
-
-    # NOTE: Akos said is not relevant at all having all here
-    # aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
-    # aux[lk.PEER_DHT] = 'All'
-    # aux[lk.CID_TYPE] = 'All'
-
-    for old, new in [
-        ('DEFAULT', 'Baseline'),
-        ('SECURE', 'Secure'),
-        ('NORMAL', 'Normal')
-    ]:
-        data.replace(old, new, inplace=True)
-
-    return data
-
-
 def plot_puslibh_time(data: pd.DataFrame):
-    data = data[[pb.SRC_PID, pb.SRC_DHT, pb.EXP_ID, pb.CID, pb.DURATION]].drop_duplicates()
+    data = data[[
+        pb.SRC_PID, pb.SRC_DHT, pb.EXP_ID, pb.CID, pb.DURATION
+    ]].drop_duplicates() # type: ignore
     
     ax = data.groupby(pb.SRC_DHT)[pb.DURATION].mean().plot(
         kind='bar',
@@ -397,7 +399,11 @@ def plot_puslibh_time(data: pd.DataFrame):
     save_fig('avg-publish-time.pdf')
 
 def plot_publish_queries(data: pd.DataFrame):
-    data = data[[pb.SRC_PID, pb.SRC_DHT, pb.EXP_ID, pb.CID, pb.QUERIES_NR]].drop_duplicates()
+    
+    data = data[[
+        pb.SRC_PID, pb.SRC_DHT, pb.EXP_ID, pb.CID, pb.QUERIES_NR
+    ]].drop_duplicates() # type: ignore
+
     ax = data.groupby(pb.SRC_DHT)[pb.QUERIES_NR].mean().plot(
         kind='bar',
         figsize=(12, 6),
@@ -413,8 +419,6 @@ def plot_publish_queries(data: pd.DataFrame):
     plt.title('Average number of queries per published CID', fontweight='bold')
     # plt.show()
     save_fig('avg-publish-queries.pdf')
-
-    
 
 def plot_publish_nodes(data: pd.DataFrame):
     data = data.groupby([
@@ -444,25 +448,185 @@ def plot_publish_nodes(data: pd.DataFrame):
     # plt.show()
     save_fig('avg-published-nodes.pdf')
 
+class GraphMetric:
+    data : dict[str, np.ndarray]
+    time : np.ndarray
+    def __init__(self, data, time):
+        self.data = data
+        self.time = time
+
+def none_idx(values : list[list[Graph]]) -> list[list[int]]:
+    return [ 
+        [i for i, l in enumerate(list) if l is None] for list in values
+    ]
+
+def calc_graph_metric(
+        graphs : ExpGraphs, 
+        calc_metric : Callable[[Graph], float]
+    ) -> GraphMetric:
+    sample = graphs['Baseline'][0]
+
+    min    = sample.count(None) # type: ignore
+    max    = len(sample)
+    assert min == 3
+
+    data : dict[str, np.ndarray] = {}
+    for label, graph_lists in graphs.items():
+        assert [[0, 1, 2]] * len(graph_lists) == none_idx(graph_lists)
+        coefficiency = np.array( [
+            [
+                calc_metric(g) for g in list[min:max]
+            ] for list in graph_lists
+        ])
+
+        data[label] = coefficiency.mean(axis=0)
+
+    time = np.arange(min, max)
+    return GraphMetric(data, time)
+
+def plot_clustering_coefficiency(graphs : ExpGraphs):
+
+    metric = calc_graph_metric(
+        graphs, lambda g : g.transitivity_undirected()
+    )
+
+    results = metric.data
+    time    = metric.time
+
+    plt.figure()
+    for label, values in results.items():
+        plt.plot(
+            time, values.round(2), label=label
+        )
+
+    plt.legend(title='Experiments')
+    plt.ylabel('Average clustering degree')
+    plt.xlabel('Time since the start of the experiment (minutes)')
+    save_fig('clustering-coefficiency.pdf')
+
+def plot_avg_path_length(graphs : ExpGraphs):
+
+    metric = calc_graph_metric(
+        graphs, lambda g : g.average_path_length()    
+    )
+
+    results = metric.data
+    time    = metric.time
+
+    plt.figure()
+    for label, values in results.items():
+        plt.plot(
+            time, values.round(2), label=label
+        )
+
+    plt.legend(title='Experiments')
+    plt.ylabel('Average path length')
+    plt.xlabel('Time since the start of the experiment (minutes)')
+    save_fig('avg-path-length.pdf')
+
+def plot_node_degree(graphs : ExpGraphs):
+    metric = calc_graph_metric(
+        graphs, lambda g : np.mean(g.degree())
+    )
+
+    results = metric.data
+    time    = metric.time
+
+    plt.figure()
+    for label, values in results.items():
+        plt.plot(
+            time, values.round(2), label=label
+        )
+
+    plt.legend(title='Experiments')
+    plt.ylabel('Average node degree')
+    plt.xlabel('Time since the start of the experiment (minutes)')
+    save_fig('avg-node-degree.pdf')
+
+# TODO:
+#   x Clustering coefficiency
+#   x Average node path
+#   x Average node degree
+#   - Throughtput (per minute?)
+def read_data(filename : str) -> pd.DataFrame:
+    data = pd.read_csv(filename, low_memory=False)
+
+    # NOTE: Akos said is not relevant at all having all here
+    # aux = data[data[lk.PEER_DHT].isin(['SECURE', 'NORMAL'])].copy()
+    # aux[lk.PEER_DHT] = 'All'
+    # aux[lk.CID_TYPE] = 'All'
+
+    for old, new in [
+        ('DEFAULT', 'Baseline'),
+        ('SECURE', 'Secure'),
+        ('NORMAL', 'Normal')
+    ]:
+        data.replace(old, new, inplace=True)
+
+    return data
+
+def build_pid_to_idx_mappping(data : pd.DataFrame) -> dict[str, int]:
+    nodes   = data[sp.SRC_PID].unique() # type: ignore
+    indexes = np.arange(nodes.shape[0], dtype=int)
+    return dict(zip(
+        nodes, indexes
+    ))
+
+def build_charts(data: pd.DataFrame) -> ExpGraphs:
+    graphs = {
+        'Baseline'         : [],
+        'Normal vs Secure' : []
+    }
+
+    for exp_id in data[sp.EXP_ID].unique():
+        rows = cast(pd.DataFrame, data[data[sp.EXP_ID] == exp_id])
+        id   = rows[sp.SRC_DHT].iloc[0] # type: ignore
+        graph_list = graphs[ 
+            'Baseline' if id == 'Baseline' else 'Normal vs Secure'
+        ]
+
+        snaps_nrs : np.ndarray = rows[sp.SNAPSHOT_NR].unique() # type: ignore
+        snaps_nrs.sort()
+
+        snaps_graphs = [None] * (snaps_nrs.max() + 1)
+        nodes_idx = build_pid_to_idx_mappping(rows)
+
+        for nr in snaps_nrs:
+            snaps_records = cast(pd.DataFrame, rows[rows[sp.SNAPSHOT_NR] == nr])
+            edges = snaps_records[[sp.SRC_PID, sp.DST_PID]].values
+            edges = [
+                (nodes_idx[src], nodes_idx[dst]) for [src, dst] in edges
+            ]
+
+            snaps_graphs[nr] = Graph(edges=edges, directed=True)
+
+        graph_list.append(snaps_graphs)
+
+    return graphs
+
 
 # TODO:
 # remove all the duplication of the code
 def main():
-    # lookups = read_data('lookups.csv')
-    # plot_avg_success_resolve(lookups)
-    # plot_success_rate(lookups)
-    # plot_avg_resolve_queries(lookups)
-    # plot_cids_lookups(lookups)
+    lookups = read_data('lookups.csv')
+    plot_avg_success_resolve(lookups)
+    plot_success_rate(lookups)
+    plot_avg_resolve_queries(lookups)
+    plot_cids_lookups(lookups)
 
-    # TODO: do the number of queries in the publish and resolve
     snapshots = read_data('snapshots.csv')
-    # plot_rt_evolution(snapshots)
+    graphs    = build_charts(snapshots)
+    plot_clustering_coefficiency(graphs)
+    plot_node_degree(graphs)
+    plot_avg_path_length(graphs)
+
+    plot_rt_evolution(snapshots)
     plot_end_rt_state(snapshots)
 
-    # publishes = read_data('publishes.csv')
-    # plot_publish_nodes(publishes)
-    # plot_puslibh_time(publishes)
-    # plot_publish_queries(publishes)
+    publishes = read_data('publishes.csv')
+    plot_publish_nodes(publishes)
+    plot_puslibh_time(publishes)
+    plot_publish_queries(publishes)
 
 # TODO: charts by bucket and by experiment
 # charts ideas:
@@ -470,4 +634,5 @@ def main():
 #  - experiment to check why normal nodes are more frequent than secure
 #  x evolution of routing table peers overall and them by bucket 
 if __name__ == '__main__':
+    __init__()
     main()
