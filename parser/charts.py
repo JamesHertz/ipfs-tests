@@ -2,8 +2,6 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
-# import utils as lk
-# import seaborn as sns
 import numpy as np
 
 import math
@@ -473,13 +471,13 @@ def calc_graph_metric(
     data : dict[str, np.ndarray] = {}
     for label, graph_lists in graphs.items():
         assert [[0, 1, 2]] * len(graph_lists) == none_idx(graph_lists)
-        coefficiency = np.array( [
+        metric_results = np.array( [
             [
                 calc_metric(g) for g in list[min:max]
             ] for list in graph_lists
         ])
 
-        data[label] = coefficiency.mean(axis=0)
+        data[label] = metric_results.mean(axis=0)
 
     time = np.arange(min, max)
     return GraphMetric(data, time)
@@ -512,13 +510,13 @@ def plot_avg_path_length(graphs : ExpGraphs):
 
     results = metric.data
     time    = metric.time
-
+    
     plt.figure()
     for label, values in results.items():
         plt.plot(
             time, values.round(2), label=label
         )
-
+    
     plt.legend(title='Experiments')
     plt.ylabel('Average path length')
     plt.xlabel('Time since the start of the experiment (minutes)')
@@ -543,11 +541,33 @@ def plot_node_degree(graphs : ExpGraphs):
     plt.xlabel('Time since the start of the experiment (minutes)')
     save_fig('avg-node-degree.pdf')
 
-# TODO:
-#   x Clustering coefficiency
-#   x Average node path
-#   x Average node degree
-#   - Throughtput (per minute?)
+
+# import networkx as nx
+# from pyvis.network import Network
+# def draw_graphs(snapshots : pd.DataFrame):
+#     nodes = cast(pd.DataFrame, snapshots[
+#         (snapshots[sp.EXP_ID] == 0) & (snapshots[sp.SNAPSHOT_NR] == 30)
+#     ])
+#
+#     mapping = build_pid_to_idx_mappping(nodes)
+#     edges = [
+#         (int(mapping[src]), int(mapping[dst])) for [src, dst] in nodes[[sp.SRC_PID, sp.DST_PID]].values
+#     ]
+#
+#     G = nx.DiGraph()
+#     G.add_edges_from(edges)
+#
+#     # Increase figure size
+#     plt.figure(figsize=(30, 30))
+#
+#     # Use a layout algorithm
+#     pos = nx.spring_layout(G, k=4)
+#     nx.draw(
+#         G, pos, node_color='skyblue', node_size=10, edge_color='gray',
+#     )
+#     plt.show()
+
+
 def read_data(filename : str) -> pd.DataFrame:
     data = pd.read_csv(filename, low_memory=False)
 
@@ -572,7 +592,7 @@ def build_pid_to_idx_mappping(data : pd.DataFrame) -> dict[str, int]:
         nodes, indexes
     ))
 
-def build_charts(data: pd.DataFrame) -> ExpGraphs:
+def build_graphs(data: pd.DataFrame) -> ExpGraphs:
     graphs = {
         'Baseline'         : [],
         'Normal vs Secure' : []
@@ -604,35 +624,35 @@ def build_charts(data: pd.DataFrame) -> ExpGraphs:
 
     return graphs
 
-
 # TODO:
-# remove all the duplication of the code
+#   x Clustering coefficiency
+#   x Average node path
+#   x Average node degree
+#   - Throughtput (reparse lookups and add time as one of the cols)
+#   - some clean up of the code (someday)
+#   - improve routing table end state readability
 def main():
     lookups = read_data('lookups.csv')
-    plot_avg_success_resolve(lookups)
-    plot_success_rate(lookups)
-    plot_avg_resolve_queries(lookups)
-    plot_cids_lookups(lookups)
+    # plot_avg_success_resolve(lookups)
+    # plot_success_rate(lookups)
+    # plot_avg_resolve_queries(lookups)
+    # plot_cids_lookups(lookups)
 
-    snapshots = read_data('snapshots.csv')
-    graphs    = build_charts(snapshots)
-    plot_clustering_coefficiency(graphs)
-    plot_node_degree(graphs)
-    plot_avg_path_length(graphs)
+    # snapshots = read_data('snapshots.csv')
+    # graphs    = build_graphs(snapshots)
+    # plot_clustering_coefficiency(graphs)
+    # plot_node_degree(graphs)
+    # plot_avg_path_length(graphs)
+    # draw_graphs(snapshots)
 
-    plot_rt_evolution(snapshots)
-    plot_end_rt_state(snapshots)
+    # plot_rt_evolution(snapshots)
+    # plot_end_rt_state(snapshots)
+    #
+    # publishes = read_data('publishes.csv')
+    # plot_publish_nodes(publishes)
+    # plot_puslibh_time(publishes)
+    # plot_publish_queries(publishes)
 
-    publishes = read_data('publishes.csv')
-    plot_publish_nodes(publishes)
-    plot_puslibh_time(publishes)
-    plot_publish_queries(publishes)
-
-# TODO: charts by bucket and by experiment
-# charts ideas:
-#  - avg number of cid resolution by experiment
-#  - experiment to check why normal nodes are more frequent than secure
-#  x evolution of routing table peers overall and them by bucket 
 if __name__ == '__main__':
     __init__()
     main()
