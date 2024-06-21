@@ -631,27 +631,28 @@ def build_graphs(data: pd.DataFrame) -> ExpGraphs:
 #   - Throughtput (reparse lookups and add time as one of the cols)
 #   - some clean up of the code (someday)
 #   - improve routing table end state readability
+#   - max of the mininum paths (network diameter)
 def main():
     lookups = read_data('lookups.csv')
-    # plot_avg_success_resolve(lookups)
-    # plot_success_rate(lookups)
-    # plot_avg_resolve_queries(lookups)
-    # plot_cids_lookups(lookups)
+    plot_avg_success_resolve(lookups)
+    plot_success_rate(lookups)
+    plot_avg_resolve_queries(lookups)
+    plot_cids_lookups(lookups)
 
-    # snapshots = read_data('snapshots.csv')
-    # graphs    = build_graphs(snapshots)
-    # plot_clustering_coefficiency(graphs)
-    # plot_node_degree(graphs)
-    # plot_avg_path_length(graphs)
+    snapshots = read_data('snapshots.csv')
+    graphs    = build_graphs(snapshots)
+    plot_clustering_coefficiency(graphs)
+    plot_node_degree(graphs)
+    plot_avg_path_length(graphs)
     # draw_graphs(snapshots)
 
-    # plot_rt_evolution(snapshots)
-    # plot_end_rt_state(snapshots)
-    #
-    # publishes = read_data('publishes.csv')
-    # plot_publish_nodes(publishes)
-    # plot_puslibh_time(publishes)
-    # plot_publish_queries(publishes)
+    plot_rt_evolution(snapshots)
+    plot_end_rt_state(snapshots)
+    
+    publishes = read_data('publishes.csv')
+    plot_publish_nodes(publishes)
+    plot_puslibh_time(publishes)
+    plot_publish_queries(publishes)
 
 if __name__ == '__main__':
     __init__()

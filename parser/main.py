@@ -6,9 +6,12 @@ import glob
 import json
 import logging as log
 import pandas as pd
+import numpy  as np
 import os
 import re
 
+
+# from utils import Headers as hd
 from utils import Headers as hd
 from utils import Lookups as lk
 from utils import Snapshots as sp 
@@ -17,7 +20,11 @@ from utils import Publishes as pv
 from typing import TypedDict
 from collections.abc import Iterator
 
-import pprint as pp
+# import pprint as pp
+from datetime import datetime as dt
+
+# format for lookup timestamps
+DATE_TIME_FMT = '%Y/%m/%d %H:%M:%S'
 
 # snapshots regular expression
 SNAPSHOTS_RE = re.compile('xxx-start-xxx([^"]+?)xxx-end-xxx')
@@ -32,6 +39,7 @@ class LookupRecord (TypedDict):
     type      : str
     providers : list[str]
     queries   : list[str]
+    timestamp : int
 
 class NodeInfo(TypedDict):
     id   : str
@@ -42,14 +50,15 @@ class PublishRecord(TypedDict):
     time_ms   : float
     providers : list[str]
     queries   : list[str]    
-
-class ProvideRecord(TypedDict):
-    cid       : str
-    time_ms   : float
-    peers    : list[str]
-
-class FullProvideRecord(PublishRecord):
     store_nodes : list[str]
+
+# class ProvideRecord(TypedDict):
+#     cid       : str
+#     time_ms   : float
+#     peers    : list[str]
+
+# class FullProvideRecord(PublishRecord):
+    # store_nodes : list[str]
 
 class DhtType(Enum):
     SECURE  = 0
@@ -74,12 +83,23 @@ def load_cids(filename : str) -> list[str]:
         return json.loads( data.split(maxsplit=2)[-1] )
         # return [ info['Content'] for info in infos ] #json.loads(aux[-1]) ]
 
+def str_to_unix_time( time : str ) -> int:
+    real_time = dt.strptime(time, DATE_TIME_FMT)
+    return int( real_time.timestamp() )
+
 def load_look_up_times(filename : str) -> list[LookupRecord]: #list[dict[str, str]]:
     times = []
     with open(filename) as file:
         for line in file.readlines():
-            aux  = line.split(maxsplit=2)[-1]
-            times.append(json.loads(aux))
+            values = line.split(maxsplit=2)
+            lookup_rec = json.loads(values[-1])
+            timestamp  = str_to_unix_time(' '.join(values[:-1]))
+
+            lookup_rec['timestamp'] = timestamp
+            times.append(
+                lookup_rec
+            )
+
         return times
 
 def load_node_info(filename : str) -> NodeInfo:
@@ -101,13 +121,15 @@ def load_snapshots(filename : str) -> Iterator[Snapshot]:
             yield snapshot
 
 
-def load_provides_record(prefix : str) -> list[FullProvideRecord]:
-    publish : dict[str, FullProvideRecord] = {}
+def load_provides_record(prefix : str) -> list[PublishRecord]:
+    publish : dict[str, PublishRecord] = {}
     with open(f'{prefix}-publish.log') as file:
         for line in file:
             res : PublishRecord = json.loads(
                 line.split(' ', maxsplit=2)[-1]
             )
+            
+            assert not (res['cid'] in publish)
             publish[res['cid']] = res
     # with open(f'{prefix}-provide.log') as file:
     #     for line in file:
@@ -153,8 +175,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
     failed_nodes : set[str] = set()
     useless_cids : set[str] = set()
 
-
-    resolved = set()
+    resolved  = set()
     published = set()
 
     # TODO: add loading bar :)
@@ -226,7 +247,8 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
                         node.get_dht().name, 
                         len(rec['queries']), 
                         rec['time_ms'],
-                        peer_id, 
+                        peer,
+                        # peer_id, 
                         nodes[peer].get_dht().name
                     ))
                     storages.add(peer)
@@ -241,14 +263,14 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
                 # print(store_count)
         # assert store_count == 0 or store_count == len(pb_records), 'something is quite wrong'
 
-
-    # list of (pid, peer_dht, cid, cid_type, lookup_time, providers, queries)
+    # list of (timestamp, pid, peer_dht, cid, cid_type, lookup_time, providers, queries)
     lookups = []
     # TODO: add loading bar :)
     # loads all CID records
     for node in nodes.values():
         times = load_look_up_times(f'{dirname}/{node.get_pid()}-lookup-times.log')
         for time_rec in times:
+            timestamp   = time_rec['timestamp']
             cid         = time_rec['cid']
             lookup_time = time_rec['time_ms']
             providers   = len(time_rec['providers'])
@@ -277,7 +299,7 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 
             assert providers <= 1
             lookups.append(
-                (node.get_pid(), node.get_dht().name, cid,
+                (timestamp, node.get_pid(), node.get_dht().name, cid,
                     c_type.name, lookup_time, providers, queries)
             )
 
@@ -291,11 +313,11 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
     # TODO: add info about lookups
     log.info("loaded: %d nodes, %d cids, %d look up records, %d snapshot records, %d publish records, %d failed nodes, %d useless cids", len(nodes), len(cids_type), len(lookups), len(snapshots), len(publishes), len(failed_nodes), len(useless_cids))
     return pd.DataFrame(lookups, 
-            columns=[lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS, lk.QUERIES]
+            columns=np.array([lk.TS, lk.PID, lk.PEER_DHT, lk.CID, lk.CID_TYPE, lk.LOOKUP_TIME, lk.PROVIDERS, lk.QUERIES])
            ), pd.DataFrame(snapshots,
-               columns=[sp.SRC_PID, sp.SRC_DHT, sp.DST_PID, sp.DST_DHT, sp.SNAPSHOT_NR, sp.BUCKET_NR]
+               columns=np.array([sp.SRC_PID, sp.SRC_DHT, sp.DST_PID, sp.DST_DHT, sp.SNAPSHOT_NR, sp.BUCKET_NR])
            ), pd.DataFrame(publishes,
-                columns=[pv.CID, pv.SRC_PID, pv.SRC_DHT, pv.QUERIES_NR, pv.DURATION, pv.STORAGE_NODE, pv.STORAGE_DHT]
+                columns=np.array([pv.CID, pv.SRC_PID, pv.SRC_DHT, pv.QUERIES_NR, pv.DURATION, pv.STORAGE_NODE, pv.STORAGE_DHT])
            )
 
 
@@ -310,44 +332,43 @@ def parse_files(dirname : str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame
 #     return []
 
 def main(args : list[str]):
-
     if len(args) < 2:
-        print("Error no file provided")
+        print("Error no directory provided")
         print(f"usage: {args[0]} directory...")
         sys.exit(1)
-
+    
     # files = parse_files(args[1:])
     files = args[1:]
-
+    
     log.basicConfig(level=log.INFO, format="%(levelname)s: %(message)s")
-
+    
     lookups   = []
     snapshots = []
     publishes = []
     for exp_id, experiment in enumerate(files):
         lkups, snap, psh= parse_files(experiment)
-
+    
         # set up experiment ids
         lkups[hd.EXP_ID] = exp_id 
         snap[hd.EXP_ID]  = exp_id
         psh[hd.EXP_ID]   = exp_id
-
+    
         # ...
         lookups.append(lkups)
         snapshots.append(snap)
         publishes.append(psh)
-
+    
     pd.concat(
         lookups, 
         ignore_index=True
     ).set_index(lk.PID).to_csv('lookups.csv')
-
-
+    
+    
     pd.concat(
         snapshots, 
         ignore_index=True
     ).set_index(sp.SRC_PID).to_csv('snapshots.csv')
-
+    
     pd.concat(
         publishes, 
         ignore_index=True
