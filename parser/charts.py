@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+from csv import writer
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -154,7 +155,7 @@ def plot_cids_lookups(data: pd.DataFrame):
     # plt.show()
     save_fig('lookup-hist.pdf')
 
-def calc_rt_evolution(snapshots: pd.DataFrame, fig : plt.Figure = None) -> pd.DataFrame:
+def calc_rt_evolution(snapshots: pd.DataFrame, fig : plt.Figure | None = None) -> pd.DataFrame:
     data = snapshots.groupby([sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT, sp.EXP_ID])[sp.DST_DHT].value_counts().to_frame()
     # print(data)
 
@@ -446,6 +447,50 @@ def plot_publish_nodes(data: pd.DataFrame):
     # plt.show()
     save_fig('avg-published-nodes.pdf')
 
+def plot_throughput(data: pd.DataFrame):
+    lookups = data.copy()
+
+    for name in ['Secure', 'Normal']:
+        lookups.replace(name, 'Normal vs Secure', inplace=True)
+
+    lookups[lk.TS]    = (lookups[lk.TS] / 60).round(0) # convert to seconds c:
+    lookups['counts'] = 0
+
+    for exp_id in lookups[lk.EXP_ID].unique():
+        selector = lookups[lk.EXP_ID] == exp_id
+        lookups.loc[
+            selector, lk.TS
+        ] -= lookups[selector][lk.TS].min()
+
+    tp_per_exp = lookups.groupby(
+        [lk.PEER_DHT, lk.TS, lk.EXP_ID]
+    )['counts'].count().to_frame().reset_index()
+
+    # print(tp_per_exp)
+    # result.reset_index(inplace=True)
+
+    throughput = tp_per_exp.groupby([lk.PEER_DHT, lk.TS])['counts'].mean().to_frame()
+    # print(throughput)
+
+    throughput.reset_index(level=(lk.PEER_DHT,), inplace=True)
+    pivot_data = throughput.pivot(columns=lk.PEER_DHT, values='counts').fillna(0)
+    # print(pivot_data)
+
+    plt.figure(figsize=(12, 8))
+
+    for dht_type in pivot_data.columns:
+        aux = pivot_data[dht_type]
+        plt.plot(pivot_data.index, aux, label=dht_type)
+
+    plt.legend(title='Experiment')
+    plt.xlabel('Times in minutes (after publish time)')
+    plt.ylabel('Throughput (operation/second)')
+    plt.title('Evoluation of throughput over the experiment')
+
+    save_fig('throughput.pdf')
+
+
+
 class GraphMetric:
     data : dict[str, np.ndarray]
     time : np.ndarray
@@ -502,10 +547,11 @@ def plot_clustering_coefficiency(graphs : ExpGraphs):
     plt.xlabel('Time since the start of the experiment (minutes)')
     save_fig('clustering-coefficiency.pdf')
 
-def plot_avg_path_length(graphs : ExpGraphs):
+def plot_diameter(graphs : ExpGraphs):
 
     metric = calc_graph_metric(
-        graphs, lambda g : g.average_path_length()    
+        # graphs, lambda g : len(g.average_path_length())    
+        graphs, lambda g : g.diameter()
     )
 
     results = metric.data
@@ -518,9 +564,9 @@ def plot_avg_path_length(graphs : ExpGraphs):
         )
     
     plt.legend(title='Experiments')
-    plt.ylabel('Average path length')
+    plt.ylabel('Diameter of the graph')
     plt.xlabel('Time since the start of the experiment (minutes)')
-    save_fig('avg-path-length.pdf')
+    save_fig('graph-diameter.pdf')
 
 def plot_node_degree(graphs : ExpGraphs):
     metric = calc_graph_metric(
@@ -638,13 +684,13 @@ def main():
     plot_success_rate(lookups)
     plot_avg_resolve_queries(lookups)
     plot_cids_lookups(lookups)
+    plot_throughput(lookups)
 
     snapshots = read_data('snapshots.csv')
     graphs    = build_graphs(snapshots)
     plot_clustering_coefficiency(graphs)
     plot_node_degree(graphs)
-    plot_avg_path_length(graphs)
-    # draw_graphs(snapshots)
+    plot_diameter(graphs)
 
     plot_rt_evolution(snapshots)
     plot_end_rt_state(snapshots)

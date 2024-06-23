@@ -10,7 +10,7 @@ class Lookups(Headers):
     LOOKUP_TIME = 'lookup-time (ms)'
     PROVIDERS   = 'providers-nr'
     QUERIES     = 'queries-nr' # should I use query peers??
-    TS          = 'timestamp'
+    TS          = 'timestamp (seconds)'
 
 class Snapshots(Headers):
     SRC_PID     = 'src-pid'
