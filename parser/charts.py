@@ -245,7 +245,7 @@ def plot_rt_evolution(snapshots: pd.DataFrame):
 
 
 
-def calc_rt_state(snapshots: pd.DataFrame) -> pd.DataFrame:
+def calc_rt_state(snapshots: pd.DataFrame | pd.Series) -> pd.DataFrame:
     data = snapshots.groupby([
         sp.SRC_PID, sp.SNAPSHOT_NR, sp.SRC_DHT, sp.EXP_ID
     ])[sp.DST_DHT].value_counts().to_frame('version-frequency')
@@ -269,92 +269,63 @@ def calc_rt_state(snapshots: pd.DataFrame) -> pd.DataFrame:
     return pivot_data
 
 def plot_end_rt_state(snapshots: pd.DataFrame):
-    last_snap = snapshots[sp.SNAPSHOT_NR].unique().max()
+    last_snap : int = snapshots[sp.SNAPSHOT_NR].unique().max() # type: ignore
     snapshots = snapshots[ 
           (snapshots[sp.SNAPSHOT_NR] == last_snap - 1) 
         & (snapshots[sp.SRC_DHT].isin(['Secure', 'Normal']))
-    ]
-
-    def built_chart(data: pd.DataFrame, title: str, ax : plt.Figure):
-        # sns.heatmap(
-        #     data, annot=True, cmap='Blues', ax=ax, fmt='.2f', annot_kws={"fontsize": 10}
-        # )
-        ax = data.plot(
-            kind='bar',
-            color=[BARS_COLORS[2], BARS_COLORS[3]],
-            ax=ax
-        )
-
-        for cnt in ax.containers:
-            ax.bar_label(cnt, labels=[f"{round(v, 2)} %" if v > 0.0 else '' for v in cnt.datavalues])
-
-
-        ax.set_xlabel(None)
-        # ax.set_ylabel(None)
-        # # ax.set_ylabel('percentage of the nodes in DHT', fontweight='bold')
-        ax.legend(title="Versão da DHT")
-        ax.set_title(title, fontweight='bold') # type: ignore
-
-        labels = [item.get_text() for item in ax.get_xticklabels()] # type: ignore
-        ticks  = range(len(labels))
-        ax.set_xticks( # type: ignore
-           ticks,
-           labels=labels, 
-           rotation=0, 
-           horizontalalignment="center"
-        ) 
+    ] # type: ignore
 
     all_buckets = snapshots[sp.BUCKET_NR].unique()
-    rows = 3
-    cols = int(math.ceil( 
-        # (len(all_buckets) + 1)/ 2
-        ( len(all_buckets) + 1) / rows
-    ))
-
-    # data = calc_rt_state(snapshots)
-    # built_chart(data, 'Percentage of nodes neibours in the Routing table', 'rt-end-state.pdf')
     fig, axes = plt.subplots(
-        nrows=rows, ncols=cols, figsize=(25, 20), layout='constrained'
-    )
-
-    fig.suptitle(
-        # 'Routing table end state for Secure and Normal Nodes', fontweight='bold', fontsize=20
-        'Estado final da Routing Table para nós Secure e Normal', fontweight='bold', fontsize=20
+        nrows=2, ncols=1, figsize=(25, 20), layout='constrained'
     )
 
     fig.supxlabel(
-        'DHT version', fontweight='bold', fontsize=16
+        'DHT version', fontweight='bold', fontsize=30
     )
 
     fig.supylabel(
-        'Percentage (%) of nodes in the routing table', fontweight='bold', fontsize=16
+        'Percentage (%) of nodes in the routing table', fontweight='bold', fontsize=30
     )
 
-    data = calc_rt_state(snapshots)
-    built_chart(
-        data, 
-        'Whole Routing Table', 
-        axes[0, 0]
-    )
+    data   = calc_rt_state(snapshots)
+    states = [data] + [
+        calc_rt_state(snapshots[snapshots[sp.BUCKET_NR] == bucket])
+        for bucket in all_buckets
+    ]
+    
+    DHT_NAMES = ['Secure', 'Normal']
+    COLORS = BARS_COLORS[2:4]
 
-    # for bucket in snapshots[sp.BUCKET_NR].unique():
-    for bucket in all_buckets:
-        col = (bucket + 1) % cols
-        row = (bucket + 1) // cols
+    for i, src in enumerate(DHT_NAMES):
+        secures_values = [
+            state.loc[src, 'Secure'] for state in states
+        ]
+        normal_values = [
+            state.loc[src, 'Normal'] for state in states
+        ]
 
-        snaps = snapshots[snapshots[sp.BUCKET_NR] == bucket]
-        data  = calc_rt_state(snaps) # type: ignore
-        built_chart(
-            data, 
-            f'Bucket {bucket}', 
-            ax=axes[row, col]
+        buckets = np.arange(1, len(states) + 1, dtype=float)
+        ax = axes[i]
+
+        ax.bar(
+            buckets-0.2, secures_values, width=0.4, color=COLORS[1], label='Secure'
         )
 
-    # TODO: uncomment when needed
-    # blank_spots = cols * rows - len(all_buckets)
-    # if blank_spots > 0:
-    #     for i in range(blank_spots):
-    #         axes[ rows - 1, cols - (1 + i)].axis('off')
+        ax.bar(
+            buckets+0.2, normal_values, width=0.4, color=COLORS[0], label='Normal'
+        )
+
+        ax.set_xticks(
+            buckets, ['Geral'] + [f'bucket {b}' for b in all_buckets]
+        )
+
+        for cnt in ax.containers:
+            ax.bar_label(cnt, labels=[f"{round(v, 1)} %" if v > 0.0 else '' for v in cnt.datavalues])
+
+        ax.set_title('Estado final da DHT dos nós ' + src, fontweight='bold',fontsize=30) # type: ignore
+        ax.legend(title='Versão da DHT')
+
     save_fig('rt-end-state.pdf', fig=fig)
 
 
@@ -719,7 +690,7 @@ def main():
 
     ## plot_rt_evolution(snapshots)
     # TODO: needs to fix the one below c:
-    # plot_end_rt_state(snapshots)
+    plot_end_rt_state(snapshots)
     
     publishes = read_data('publishes.csv')
     plot_publish_nodes(publishes)
