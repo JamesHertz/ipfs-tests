@@ -18,6 +18,7 @@ type ExpGraphs = dict[str, list[list[Graph]]]
 
 BARS_COLORS     = ['C10', 'C9', 'C1', 'C2']
 CHARTS_SAVE_DIR = 'charts'
+TIME_LIMIT_MINUTES = 30
 
 def __init__():
     if not path.exists(CHARTS_SAVE_DIR):
@@ -34,7 +35,7 @@ def save_fig(filename: str, fig : plt.Figure = None): # type: ignore
     fig = fig if fig is not None else plt  # type: ignore
     filename = f'charts/{filename}'
     print(f"Saving '{filename}'")
-    fig.savefig(filename)
+    fig.savefig(filename,bbox_inches='tight')
     plt.clf()  # clear drawn charts for others :) # TODO: get rid of this thing c:
 
 
@@ -45,21 +46,22 @@ def plot_avg_success_resolve(data: pd.DataFrame):
 
     # print(data)
     data.reset_index(level=(lk.CID_TYPE,), inplace=True)
-    pivot_data = data.pivot(columns=lk.CID_TYPE, values='resolve_time').fillna(0)
+    pivot_data = data.pivot(columns=lk.CID_TYPE, values='resolve_time')
 
     ax = pivot_data.plot(
         kind='bar', color=BARS_COLORS[1:],
-        figsize=(14, 8),
+        figsize=(8, 6),
+        width=2
     )
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues])
+        ax.bar_label(cnt, labels=[round(v, 1) if v > 0.0 else '' for v in cnt.datavalues], fontsize=15)
 
-    plt.xticks(rotation=0, horizontalalignment="center")
-    plt.xlabel('Versão da DHT', fontweight='bold')
-    plt.ylabel('tempo (ms)', fontweight='bold')
+    plt.xticks(rotation=0, horizontalalignment="center",fontsize=20)
+    plt.xlabel('Versão da DHT', fontweight='bold',fontsize=22)
+    plt.ylabel('Tempo (ms)', fontweight='bold',fontsize=22)
     # plt.title('Average Resolve time (ms)', fontweight='bold')
-    plt.legend(title='Tipo de CID')
+    plt.legend(title='Tipo de CID',fontsize=22)
 
     # plt.show()
     save_fig('avg-resolve.pdf')
@@ -74,12 +76,14 @@ def plot_success_rate(data: pd.DataFrame):
 
     data['success rate'] = data['sum'] / data['count'] * 100
 
-    pivot_data = data.pivot(columns=lk.CID_TYPE, values='success rate').fillna(0)
+    pivot_data = data.pivot(columns=lk.CID_TYPE, values='success rate')#.fillna(0)
 
     ax = pivot_data.plot(
         kind='bar',
-        figsize=(14, 8),
+        figsize=(8, 7),
         color=BARS_COLORS[1:],
+        align='center',
+        width=2,
         # linewidth=4,
         # edgecolor='white',
     )
@@ -87,13 +91,15 @@ def plot_success_rate(data: pd.DataFrame):
     # print(pivot_data)
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues], fontsize=12)
+        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues], fontsize=18)
 
-    plt.xticks(rotation=0, horizontalalignment="center")
-    plt.xlabel('Versão da DHT', fontweight='bold')
-    plt.ylabel('Taxa de sucesso (%)', fontweight='bold')
+    plt.xticks(rotation=0, horizontalalignment="center",fontsize=20)
+    # plt.yticks([0,50,100])
+    plt.xlabel('Versão da DHT', fontweight='bold',fontsize=26)
+    plt.ylabel('Taxa de sucesso (%)', fontweight='bold',fontsize=26)
     # plt.title('Success rate of resolved CIDs', fontweight='bold')
-    plt.legend(title='Tipo de CID', loc='lower right')
+    plt.legend(title='Tipo de CID', fontsize=26)
+    # plt.tight_layout(pad=3)
 
     # # Display the histogram
     # plt.show()
@@ -363,19 +369,20 @@ def plot_avg_resolve_queries(data: pd.DataFrame):
 
     ax = pivot_data.plot(
         kind='bar',
-        figsize=(12, 8),
+        figsize=(8, 6),
         color=BARS_COLORS[1:],
+        width=2
     )
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[f"{round(v, 1)}" if v > 0.0 else '' for v in cnt.datavalues])
+        ax.bar_label(cnt, labels=[f"{round(v, 1)}" if v > 0.0 else '' for v in cnt.datavalues],fontsize=17)
 
     # print(pivot_data)
 
-    plt.xticks(rotation=0, horizontalalignment="center")
-    plt.xlabel('Versão da DHT', fontweight='bold')
-    plt.legend(title='Tipos de CID', loc='lower right')
-    plt.ylabel('Número de nós que se perguntou', fontweight='bold')
+    plt.xticks(rotation=0, horizontalalignment="center", fontsize=22)
+    plt.xlabel('Versão da DHT', fontweight='bold', fontsize=22)
+    plt.legend(title='Tipos de CID', loc='lower right', fontsize=22)
+    plt.ylabel('Número de nós que\nse contatou', fontweight='bold', fontsize=22)
     # plt.title('Average number of queries per resolved CID type', fontweight='bold')
     # plt.show()
     save_fig('avg-res-queries.pdf')
@@ -387,16 +394,17 @@ def plot_puslish_time(data: pd.DataFrame):
     
     ax = data.groupby(pb.SRC_DHT)[pb.DURATION].mean().plot(
         kind='bar',
-        figsize=(12, 8),
+        figsize=(6,6),
+        # figsize=(12, 8),
         color=BARS_COLORS[1:],
     )
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues])
+        ax.bar_label(cnt, labels=[round(v, 2) if v > 0.0 else '' for v in cnt.datavalues], fontsize=15)
 
-    plt.xticks(rotation=0, horizontalalignment="center")
-    plt.xlabel('Versão da DHT', fontweight='bold')
-    plt.ylabel('tempo (ms)', fontweight='bold')
+    plt.xticks(rotation=0, horizontalalignment="center", fontsize=22)
+    plt.xlabel('Versão da DHT', fontweight='bold', fontsize=22)
+    plt.ylabel('Tempo (ms)', fontweight='bold', fontsize=22)
     # plt.title('Average publish time (ms)', fontweight='bold')
     # plt.show()
     save_fig('avg-publish-time.pdf')
@@ -409,17 +417,17 @@ def plot_publish_queries(data: pd.DataFrame):
 
     ax = data.groupby(pb.SRC_DHT)[pb.QUERIES_NR].mean().plot(
         kind='bar',
-        figsize=(12, 8),
+        figsize=(8, 6),
         color=BARS_COLORS[1:],
     )
 
     for cnt in ax.containers:
-        ax.bar_label(cnt, labels=[round(v, 1) if v > 0.0 else '' for v in cnt.datavalues])
+        ax.bar_label(cnt, labels=[round(v, 1) if v > 0.0 else '' for v in cnt.datavalues],fontsize=17.5)
 
-    plt.xticks(rotation=0, horizontalalignment="center")
-    plt.xlabel('Versão da DHT', fontweight='bold')
+    plt.xticks(rotation=0, horizontalalignment="center",fontsize=22)
+    plt.xlabel('Versão da DHT', fontweight='bold',fontsize=22)
     # plt.ylabel('Average number of queries', fontweight='bold')
-    plt.ylabel('Número de nós que se perguntou', fontweight='bold')
+    plt.ylabel('Número de nós que\nse contatou', fontweight='bold',fontsize=22)
     # plt.title('Average number of queries per published CID', fontweight='bold')
     # plt.show()
     save_fig('avg-publish-queries.pdf')
@@ -438,18 +446,19 @@ def plot_publish_nodes(data: pd.DataFrame):
     ax = pivot.groupby(pb.SRC_DHT).mean().plot(
         kind='bar',
         color=BARS_COLORS[1:],
-        figsize=(12, 6),
+        figsize=(8, 7),
+        width=1
     )
 
     for cnt in ax.containers:
         ax.bar_label(cnt, labels=[round(v, 1) if v > 0.0 else '' for v in cnt.datavalues])
 
-    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.xticks(rotation=0, horizontalalignment="center",fontsize=22)
     # plt.legend(title='Storage Nodes DHT')
-    plt.legend(title='Nós da DHT que guardaram os PRs')
+    plt.legend(title='Nós que guardaram os PRs',loc='upper center', fontsize=22)
     # plt.title('Average number of nodes published per CID', fontweight='bold')
-    plt.xlabel('Versão da DHT', fontweight='bold')
-    plt.ylabel('Número médio de nós', fontweight='bold')
+    plt.xlabel('Versão da DHT', fontweight='bold',fontsize=24)
+    plt.ylabel('Número médio de nós', fontweight='bold',fontsize=24)
     # plt.show()
     save_fig('avg-published-nodes.pdf')
 
@@ -482,15 +491,16 @@ def plot_throughput(data: pd.DataFrame):
     pivot_data = throughput.pivot(columns=lk.PEER_DHT, values='counts').fillna(0)
     # print(pivot_data)
 
-    plt.figure(figsize=(12, 8))
+    # plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(6, 6))
 
     for dht_type in pivot_data.columns:
         aux = pivot_data[dht_type]
         plt.plot(pivot_data.index, aux, label=dht_type)
 
-    plt.legend(title='Experiências')
-    plt.xlabel('Tempo em minutos (depois de publicarem na DHT)')
-    plt.ylabel('Throughput (operação/minuto)')
+    plt.legend(title='Experiências',fontsize=22)
+    plt.xlabel('Tempo (em minutos)',fontsize=22)
+    plt.ylabel('Throughput (operação/minuto)',fontsize=22)
     # plt.title('Evoluation of throughput over the experiment')
 
     save_fig('throughput.pdf')
@@ -542,15 +552,16 @@ def plot_clustering_coefficiency(graphs : ExpGraphs):
     results = metric.data
     time    = metric.time
 
-    plt.figure()
+    # plt.figure(figsize=(12,8))
+    plt.figure(figsize=(8,6))
     for label, values in results.items():
         plt.plot(
             time, values.round(2), label=label
         )
 
-    plt.legend(title='Experiências')
-    plt.ylabel('Coeficiente de agrupamento médio')
-    plt.xlabel('Tempo desde o início da experiência (em minutos)')
+    plt.legend(title='Experiências',fontsize=22)
+    plt.ylabel('Coeficiente de agrupamento \nmédio',fontsize=22)
+    plt.xlabel('Tempo (em minutos)',fontsize=22)
     save_fig('clustering-coefficiency.pdf')
 
 def plot_diameter(graphs : ExpGraphs):
@@ -563,15 +574,15 @@ def plot_diameter(graphs : ExpGraphs):
     results = metric.data
     time    = metric.time
     
-    plt.figure()
+    plt.figure(figsize=(8,6))
     for label, values in results.items():
         plt.plot(
             time, values.round(2), label=label
         )
     
-    plt.legend(title='Experiências')
-    plt.ylabel('Diamétro do grafo')
-    plt.xlabel('Tempo desde o início da experiência (em minutos)')
+    plt.legend(title='Experiências',fontsize=22)
+    plt.ylabel('Diamétro do grafo',fontsize=22)
+    plt.xlabel('Tempo (em minutos)',fontsize=22)
     save_fig('graph-diameter.pdf')
 
 def plot_node_degree(graphs : ExpGraphs):
@@ -582,16 +593,16 @@ def plot_node_degree(graphs : ExpGraphs):
     results = metric.data
     time    = metric.time
 
-    plt.figure()
+    plt.figure(figsize=(8,6))
     for label, values in results.items():
         plt.plot(
             time, values.round(2), label=label
         )
 
-    plt.legend(title='Experiments')
+    plt.legend(title='Experiments',fontsize=22)
     # plt.ylabel('Average node degree')
-    plt.ylabel('Grau médio dos vértices')
-    plt.xlabel('Tempo desde o início da experiência (em minutos)')
+    plt.ylabel('Grau médio dos vértices',fontsize=22)
+    plt.xlabel('Tempo (em minutos)',fontsize=22)
     # plt.xlabel('Time since the start of the experiment (minutes)')
     save_fig('avg-node-degree.pdf')
 
@@ -687,10 +698,12 @@ def build_graphs(data: pd.DataFrame) -> ExpGraphs:
 #   - improve routing table end state readability
 #   - max of the mininum paths (network diameter)
 def main():
-    plt.rcParams.update(
-        {'font.size' : 15}
-    )
-
+    plt.rcParams.update({
+        'font.size' : 20,
+        'axes.spines.top'   : False,
+        'axes.spines.right' : False
+    })
+ 
     lookups = read_data('lookups.csv')
     plot_success_rate(lookups)
     plot_avg_success_resolve(lookups)
@@ -705,7 +718,8 @@ def main():
     plot_diameter(graphs)
 
     ## plot_rt_evolution(snapshots)
-    plot_end_rt_state(snapshots)
+    # TODO: needs to fix the one below c:
+    # plot_end_rt_state(snapshots)
     
     publishes = read_data('publishes.csv')
     plot_publish_nodes(publishes)
