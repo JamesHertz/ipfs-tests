@@ -9,3 +9,4 @@ charts
 .vscode
 .DS_STORE
 /todo.md
+!paper.pdf
